@@ -1,0 +1,256 @@
+{% extends "admin/index.html" %}
+{% block content %}
+    <div id="app">
+        <section class="content-main">
+            <div class="row">
+                <div class="col-9">
+                    <div class="content-header">
+                        <h2 class="content-title">Add New Product</h2>
+                        <div>
+                            <a href="/product_list"><button class="btn btn-light rounded font-sm mr-5 text-body hover-up">Back</button></a>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-9">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4>Information</h4>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data" @submit.prevent="submitProduct">
+                                <div class="mb-4">
+                                    <label for="product_code" class="form-label">Product Code</label>
+                                    <input type="text" placeholder="Type here" class="form-control" id="product_code"
+                                           v-model="products.product_code"> <!-- Bind to products.product_code -->
+                                </div>
+                                <div class="mb-4">
+                                    <label for="product_name" class="form-label">Product Name</label>
+                                    <input type="text" placeholder="Type here" v-model="products.name"
+                                           class="form-control" id="product_name"> <!-- Bind to products.name -->
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Description</label>
+                                    <textarea placeholder="Type here" class="form-control" rows="4"
+                                              v-model="products.description" id="description"></textarea>
+                                    <!-- Bind to products.description -->
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-4">
+                                        <div class="mb-4">
+                                            <label class="form-label">Price</label>
+                                            <input placeholder="$" type="text" class="form-control"
+                                                   v-model="products.price" id="price"> <!-- Bind to products.price -->
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4">
+                                        <div class="mb-4">
+                                            <label class="form-label">Quantity</label>
+                                            <input placeholder="" type="number" class="form-control" min="0"
+                                                   v-model="products.current_stock" id="current_stock">
+                                            <!-- Bind to products.current_stock -->
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label">Category</label>
+                                        <select class="form-select" v-model="products.cat_id" required>
+                                            <!-- Bind to products.cat_id -->
+                                            <option value="" disabled selected>Select a category</option>
+                                            <option v-for="(category, index) in categories" :key="index"
+                                                    :value="category.cat_id" id="cat_id">
+                                                [[ category.cat_name ]]
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="card-header">
+                                    <h4>Image Upload</h4>
+                                </div>
+                                <div class="card-body">
+                                    <img :src="products.image" alt=""
+                                         style="width:30%; height:200px; margin-bottom: 30px;" v-if="products.image">
+                                    <input id="image" type="file" @change="onFileChange">
+                                </div>
+                                <button class="btn btn-md rounded font-sm hover-up float-lg-end" type="submit">Save
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+
+                    <!-- card end// -->
+                    {#                    <div class="card mb-4">#}
+                    {#                        <div class="card-header">#}
+                    {#                            <h4>Shipping</h4>#}
+                    {#                        </div>#}
+                    {#                        <div class="card-body">#}
+                    {#                            <form>#}
+                    {#                                <div class="row">#}
+                    {#                                    <div class="col-lg-6">#}
+                    {#                                        <div class="mb-4">#}
+                    {#                                            <label for="product_name" class="form-label">Width</label>#}
+                    {#                                            <input type="text" placeholder="inch" class="form-control" id="product_name">#}
+                    {#                                        </div>#}
+                    {#                                    </div>#}
+                    {#                                    <div class="col-lg-6">#}
+                    {#                                        <div class="mb-4">#}
+                    {#                                            <label for="product_name" class="form-label">Height</label>#}
+                    {#                                            <input type="text" placeholder="inch" class="form-control" id="product_name">#}
+                    {#                                        </div>#}
+                    {#                                    </div>#}
+                    {#                                </div>#}
+                    {#                                <div class="mb-4">#}
+                    {#                                    <label for="product_name" class="form-label">Weight</label>#}
+                    {#                                    <input type="text" placeholder="gam" class="form-control" id="product_name">#}
+                    {#                                </div>#}
+                    {#                                <div class="mb-4">#}
+                    {#                                    <label for="product_name" class="form-label">Shipping fees</label>#}
+                    {#                                    <input type="text" placeholder="$" class="form-control" id="product_name">#}
+                    {#                                </div>#}
+                    {#                            </form>#}
+                    {#                        </div>#}
+                    {#                    </div> <!-- card end// -->#}
+                </div>
+                {#                <div class="col-lg-3">#}
+                {#                    <div class="card mb-4">#}
+                {#                        <div class="card-header">#}
+                {#                            <h4>Media</h4>#}
+                {#                        </div>#}
+                {#                        <div class="card-body">#}
+                {##}
+                {#                                <img src="static/admin/assets/imgs/theme/upload.svg" alt="" style="width:600px; height:100px; margin-bottom: 30px">#}
+                {##}
+                {#<input class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" id="file_input" type="file">#}
+                {##}
+                {##}
+                {#                        </div>#}
+                {#                    </div> <!-- card end// -->#}
+                {#                    <div class="card mb-4">#}
+                {#                        <div class="card-header">#}
+                {#                            <h4>Organization</h4>#}
+                {#                        </div>#}
+                {#                        <div class="card-body">#}
+                {#                            <div class="row gx-2">#}
+                {#                                <div class="col-sm-6 mb-3">#}
+                {#                                    <label class="form-label">Category</label>#}
+                {#                                    <select class="form-select">#}
+                {#                                        <option> Automobiles </option>#}
+                {#                                        <option> Home items </option>#}
+                {#                                        <option> Electronics </option>#}
+                {#                                        <option> Smartphones </option>#}
+                {#                                        <option> Sport items </option>#}
+                {#                                        <option> Baby and Tous </option>#}
+                {#                                    </select>#}
+                {#                                </div>#}
+                {#                                <div class="col-sm-6 mb-3">#}
+                {#                                    <label class="form-label">Sub-category</label>#}
+                {#                                    <select class="form-select">#}
+                {#                                        <option> Nissan </option>#}
+                {#                                        <option> Honda </option>#}
+                {#                                        <option> Mercedes </option>#}
+                {#                                        <option> Chevrolet </option>#}
+                {#                                    </select>#}
+                {#                                </div>#}
+                {#                                <div class="mb-4">#}
+                {#                                    <label for="product_name" class="form-label">Tags</label>#}
+                {#                                    <input type="text" class="form-control">#}
+                {#                                </div>#}
+                {#                            </div> <!-- row.// -->#}
+                {#                        </div>#}
+                {#                    </div> <!-- card end// -->#}
+                {#                </div>#}
+            </div>
+        </section>
+    </div>
+
+{% endblock %}
+{% block script %}
+    <script type="module">
+        const {createApp} = Vue;
+
+        createApp({
+            delimiters: ['[[', ']]'],
+            data() {
+                return {
+                    products: {
+                        product_code: '',
+                        name: '',
+                        description: '',
+                        price: null,
+                        current_stock: null,
+                        cat_id: null,
+                        image: 'static/admin/assets/images/upload.svg', // Default placeholder
+                    },
+                    image: null,
+                    categories: []
+                };
+            },
+            mounted() {
+                this.fetchCategories();
+            },
+            methods: {
+                onFileChange(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        this.image = file;
+                        this.products.image = URL.createObjectURL(file); // Preview the image
+                    }
+                },
+                async fetchCategories() {
+                    try {
+                        const response = await axios.get('http://127.0.0.1:5000/api/categories');
+                        this.categories = response.data;
+                    } catch (error) {
+                        console.error('Error fetching categories:', error);
+                    }
+                },
+                resetForm() {
+                    this.products = {
+                        product_code: '',
+                        name: '',
+                        description: '',
+                        price: null,
+                        current_stock: null,
+                        cat_id: null,
+                        image: 'static/admin/assets/images/upload.svg', // Reset to default placeholder
+                    };
+                    this.image = null; // Clear the image file reference
+                },
+                async submitProduct() {
+                    try {
+                        const formData = new FormData();
+                        formData.append('product_code', this.products.product_code);
+                        formData.append('name', this.products.name);
+                        formData.append('description', this.products.description);
+                        formData.append('price', this.products.price);
+                        formData.append('current_stock', this.products.current_stock);
+                        formData.append('cat_id', this.products.cat_id);
+                        if (this.image) {
+                            formData.append('image', this.image);
+                        }
+
+                        // Log FormData entries for debugging
+                        for (const [key, value] of formData.entries()) {
+                            console.log(`${key}: ${value}`);
+                        }
+
+                        const response = await axios.post('http://127.0.0.1:5000/api/products', formData, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                            },
+                        });
+
+                       swal("Success!", "Product added successfully!", "success");
+                        {#console.log(response.data);#}
+                        this.resetForm();
+                    } catch (error) {
+                        console.error('Error adding product:', error.response ? error.response.data : error);
+                    }
+                }
+
+
+            },
+        }).mount('#app');
+    </script>
+
+{% endblock %}

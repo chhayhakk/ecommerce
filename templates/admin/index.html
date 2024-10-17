@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+{% include "admin/includes/head.html" %}
+
+<body>
+    <div class="screen-overlay"></div>
+  {% include "admin/includes/aside.html" %}
+    <main class="main-wrap">
+        {% include "admin/includes/header.html" %}
+      {% block content %}
+
+      {% endblock %}
+        <!-- content-main end// -->
+       {% include "admin/includes/footer.html" %}
+    </main>
+    {% include "admin/includes/script.html" %}
+    {% block script %}
+
+    {% endblock %}
+</body>
+
+</html>

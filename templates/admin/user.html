@@ -1,0 +1,459 @@
+{% extends "admin/index.html" %}
+{% block content %}
+    <div id="app">
+        <div id="crud-modal" tabindex="-1" aria-hidden="true"
+             class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+            <div class="relative p-4 w-full max-w-md max-h-full">
+                <!-- Modal content -->
+                <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+                    <!-- Modal header -->
+                    <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            Create New User
+                        </h3>
+                        <button type="button"
+                                class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                                data-modal-toggle="crud-modal">
+                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 14 14">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                      stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                            </svg>
+                            <span class="sr-only">Close modal</span>
+                        </button>
+                    </div>
+                    <!-- Modal body -->
+                    <form class="p-4 md:p-5" method="post" enctype="multipart/form-data" @submit.prevent="submitForm">
+                        <div class="grid gap-4 mb-4 grid-cols-2">
+                            <div class="col-span-2">
+                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                                <input type="text" name="name" id="name" v-model="newUser.name"
+                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                       placeholder="Type username" required="">
+                            </div>
+                            <div class="col-span-2">
+                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                                <input type="password" name="password" id="password" v-model="newUser.password"
+                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                       placeholder="Type password" required="">
+                            </div>
+                            <div class="col-span-2">
+                                <label for="input-group-1"
+                                       class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your
+                                    Email</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
+                                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
+                                             xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
+                                            <path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z"/>
+                                            <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>
+                                        </svg>
+                                    </div>
+
+
+                                    <input type="text" id="input-group-1" id="email" name="email"
+                                           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                           placeholder="name@flowbite.com" v-model="newUser.email">
+                                    <p v-if="errors.email" class="text-red-600 text-sm mt-1">[[ errors.email ]]</p>
+                                </div>
+                            </div>
+                            <div class="col-span-2">
+                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">User
+                                    code</label>
+                                <input type="text" name="usercode" id="usercode" v-model="newUser.code"
+                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                       placeholder="Type user code" required="">
+                            </div>
+                            <div class="col-span-2">
+                                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Phone
+                                    Number</label>
+                                <input type="text" name="phone" id="phone" v-model="newUser.phone"
+                                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                       placeholder="Type phone number" required="">
+                            </div>
+                            <div class="col-span-2 sm:col-span-1">
+                                <label for="category"
+                                       class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Gender</label>
+                                <select id="gender" v-model="newUser.gender" name="gender"
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                    <option selected="">Select gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                </select>
+                            </div>
+
+                            <div class="col-span-2 sm:col-span-1">
+                                <label for="category"
+                                       class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Role</label>
+                                <select id="role" v-model="newUser.role" name="role"
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                    <option selected="">Select role</option>
+                                    <option value="employee">Employee</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="hr">HR</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                <label for="category"
+                                       class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Status</label>
+                                <select id="status" v-model="newUser.status" name="status"
+                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                    <option selected="">Select status</option>
+                                    <option value="active">Active</option>
+                                    <option value="block">Block</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                <label for="description"
+                                       class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Address</label>
+                                <textarea id="description" rows="4" v-model="newUser.address" id="address"
+                                          name="address"
+                                          class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                          placeholder="Write product description here"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-span-2 mb-4">
+                            <img :src="newUser.profile" alt=""
+                                 style="width:30%; height:150px; margin-bottom: 30px;" v-if="newUser.profile">
+                            <input id="image" type="file" @change="onFileChange">
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-md btn-brand">
+                                [[ isEditing ? 'Update User' : 'Add New User' ]]
+                            </button>
+
+                            <button class="btn btn-secondary btn-brand" @click="closeModal()">Back</button>
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <section class="content-main">
+            <div class="content-header">
+                <h2 class="content-title">User</h2>
+                <div>
+                    <a href="#" @click="openModel" class="btn btn-primary"><i class="material-icons md-plus"></i> Create
+                        new</a>
+                </div>
+            </div>
+            <div class="card mb-4">
+                <header class="card-header">
+                    <div class="row gx-3">
+                        <div class="col-lg-4 col-md-6 me-auto">
+                            <input type="text" placeholder="Search..." class="form-control">
+                        </div>
+                        <div class="col-lg-2 col-md-3 col-6">
+                            <select class="form-select">
+                                <option>Status</option>
+                                <option>Active</option>
+                                <option>Disabled</option>
+                                <option>Show all</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-3 col-6">
+                            <select class="form-select">
+                                <option>Show 20</option>
+                                <option>Show 30</option>
+                                <option>Show 40</option>
+                            </select>
+                        </div>
+                    </div>
+                </header> <!-- card-header end// -->
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Gender</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Role</th>
+                                <th class="text-end"> Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr v-for="(user, index) in users" :key="index">
+                                <td width="20%">
+                                    <a href="#" class="itemside">
+                                        <div class="left">
+                                            <img :src="`/static/admin/assets/images/${user.profile}`"
+                                                 class="img-sm img-avatar" alt="Userpic">
+                                        </div>
+                                        <div class="info pl-3">
+                                            <h6 class="mb-0 title">[[user.name]]</h6>
+                                            <small class="text-muted">Usercode: [[user.code]]</small>
+                                        </div>
+                                    </a>
+                                </td>
+                                <td>[[user.gender]]</td>
+                                <td>[[user.phone]]</td>
+                                <td>[[user.email]]</td>
+                                <td><span class="badge rounded-pill alert-success">[[user.status]]</span></td>
+                                <td>[[user.role]]</td>
+                                <td class="text-end">
+                                    <a href="#" @click="editUser(user)"
+                                       class="btn btn-sm font-sm rounded btn-brand mr-2">
+                                        <i class="material-icons md-edit"></i> Edit
+                                    </a>
+                                    <a href="#" @click="deleteUser(user.user_id)"
+                                       class="btn btn-sm font-sm btn-light rounded">
+                                        <i class="material-icons md-delete_forever"></i> Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table> <!-- table-responsive.// -->
+                    </div>
+                </div> <!-- card-body end// -->
+            </div> <!-- card end// -->
+            <div class="pagination-area mt-15 mb-50">
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination justify-content-start">
+                        <li class="page-item active"><a class="page-link" href="#">01</a></li>
+                        <li class="page-item"><a class="page-link" href="#">02</a></li>
+                        <li class="page-item"><a class="page-link" href="#">03</a></li>
+                        <li class="page-item"><a class="page-link dot" href="#">...</a></li>
+                        <li class="page-item"><a class="page-link" href="#">16</a></li>
+                        <li class="page-item"><a class="page-link" href="#"><i
+                                class="material-icons md-chevron_right"></i></a></li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+    </div>
+{% endblock %}
+{% block script %}
+    <script>
+        const {createApp} = Vue
+        createApp({
+            delimiters: ['[[', ']]'],
+            created() {
+
+            },
+            data() {
+                return {
+                    users: [],
+                    newUser: {
+                        code: null,
+                        name: '',
+                        password: '',
+                        phone: null,
+                        address: null,
+                        email: null,
+                        role: '',
+                        gender: '',
+                        profile: 'static/admin/assets/images/upload.svg',
+                        status: null,
+                    },
+                    image: null,
+                    errors: {},
+                    isEditing: false,  // To track if the form is in edit mode
+                    userId: null
+
+                }
+            },
+            mounted() {
+                const modalElement = document.getElementById('crud-modal');
+                this.modalInstance = new Modal(modalElement);
+                this.fetchUsers()
+            },
+            methods: {
+                async deleteUser(userId) {
+                    // Show confirmation modal
+                    swal({
+                            title: "Are you sure?",
+                            text: "You won't be able to revert this!",
+                            type: "warning",
+                            showCancelButton: true,
+                            confirmButtonColor: "#DD6B55",
+                            confirmButtonText: "Yes, delete it!",
+                            cancelButtonText: "No, cancel!",
+                            closeOnConfirm: false,
+                            closeOnCancel: false
+                        },
+                        async (isConfirm) => {
+                            if (isConfirm) {
+                                try {
+                                    const response = await axios.delete(`http://127.0.0.1:5000/api/users/${userId}`);
+                                    if (response.status === 204) {
+                                        this.fetchUsers(); // Refresh the user list
+                                        swal("Deleted!", "User has been deleted.", "success"); // Show success message
+                                    }
+                                } catch (error) {
+                                    console.error('Error deleting user:', error.response ? error.response.data : error.message);
+                                    swal("Error!", "There was an error deleting the user.", "error"); // Show error message
+                                }
+                            } else {
+                                swal("Cancelled", "User is safe :)", "error"); // Show cancellation message
+                            }
+                        });
+                },
+
+
+                editUser(user) {
+                    this.isEditing = true;  // Set editing mode
+                    this.userId = user.user_id;  // Store user ID
+                    this.newUser = {
+                        code: user.code,
+                        name: user.name,
+                        password: user.password, // Consider omitting password for security reasons
+                        phone: user.phone,
+                        address: user.address,
+                        email: user.email,
+                        role: user.role,
+                        gender: user.gender,
+                        //profile: `/static/admin/assets/images/'${user.profile}` || 'static/admin/assets/images/upload.svg', // Use existing profile image
+                        status: user.status,
+                    };
+                    this.image = null;
+                    this.newUser.profile = `/static/admin/assets/images/${user.profile}`;// Reset the image preview
+                    this.modalInstance.show(); // Show the modal
+                },
+                onFileChange(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        this.image = file;
+                        this.newUser.profile = URL.createObjectURL(file); // Preview the image
+                    }
+                },
+                openModel() {
+                    this.modalInstance.show()
+                },
+                closeModal() {
+                    this.modalInstance.hide()
+                    this.resetForm();
+                },
+                async fetchUsers() {
+                    try {
+                        const response = await axios.get('http://127.0.0.1:5000/api/users');
+                        this.users = response.data;
+                    } catch (error) {
+                        console.error('Error fetching users:', error);
+                    }
+                },
+                async createUser() {
+                    try {
+                        // Create FormData instance
+                        const formData = new FormData();
+                        formData.append('code', this.newUser.code);
+                        formData.append('name', this.newUser.name);
+                        formData.append('role', this.newUser.role);
+                        formData.append('gender', this.newUser.gender);
+                        formData.append('address', this.newUser.address);
+                        formData.append('status', this.newUser.status);
+                        formData.append('email', this.newUser.email);
+                        formData.append('phone', this.newUser.phone);
+                        formData.append('password', this.newUser.password);
+
+                        // Check if profile is a file and append it, otherwise skip
+                        if (this.image) {
+                            formData.append('image', this.image); // Use `this.image` for the actual file
+                        }
+                        this.errors = {};
+                        // Send POST request with form data
+                        const response = await axios.post('http://127.0.0.1:5000/api/users', formData, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data'
+                            }
+                        });
+
+                        // Handle success and reset form fields
+                        if (response.status === 201) {
+                            this.fetchUsers();
+                            this.newUser = {
+                                name: '',
+                                code: '',
+                                role: '',
+                                gender: '',
+                                address: '',
+                                status: '',
+                                email: '',
+                                phone: '',
+                                profile: 'static/admin/assets/images/upload.svg', // Reset to default image
+                                password: ''
+                            };
+                            this.image = null;
+                            this.closeModal()
+                        }
+                    } catch (error) {
+                        if (error.response && error.response.data.error === 'email_exists') {
+                            this.errors.email = error.response.data.message; // Set the email error message
+                        } else {
+                            console.error('Error creating user:', error.response ? error.response.data : error.message);
+                        }
+                    }
+                },
+                async updateUser() {
+                    try {
+                        // Create FormData instance
+                        const formData = new FormData();
+                        formData.append('code', this.newUser.code);
+                        formData.append('name', this.newUser.name);
+                        formData.append('role', this.newUser.role);
+                        formData.append('gender', this.newUser.gender);
+                        formData.append('address', this.newUser.address);
+                        formData.append('status', this.newUser.status);
+                        formData.append('email', this.newUser.email);
+                        formData.append('phone', this.newUser.phone);
+                        formData.append('password', this.newUser.password);
+
+                        // Check if profile is a file and append it
+                        if (this.image) {
+                            formData.append('image', this.image); // Use `this.image` for the actual file
+                        }
+
+                        this.errors = {};
+
+                        // Send PUT request with form data
+                        const response = await axios.put(`http://127.0.0.1:5000/api/users/${this.userId}`, formData, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data'
+                            }
+                        });
+
+                        // Handle success and reset form fields
+                        if (response.status === 200) {
+                            this.fetchUsers();
+                            this.resetForm();
+                            this.closeModal();
+                        }
+                    } catch (error) {
+                        if (error.response && error.response.data.error === 'email_exists') {
+                            this.errors.email = error.response.data.message; // Set the email error message
+                        } else {
+                            console.error('Error updating user:', error.response ? error.response.data : error.message);
+                        }
+                    }
+                },
+                async submitForm() {
+                    if (this.isEditing) {
+                        await this.updateUser();
+                    } else {
+                        await this.createUser();
+                    }
+                },
+                resetForm() {
+                    this.newUser = {
+                        code: null,
+                        name: '',
+                        password: '',
+                        phone: null,
+                        address: null,
+                        email: null,
+                        role: '',
+                        gender: '',
+                        profile: 'static/admin/assets/images/upload.svg',
+                        status: null,
+                    };
+                    this.image = null;
+                    this.isEditing = false; // Reset to not editing mode
+                    this.userId = null;     // Reset user ID
+                },
+
+            }
+        }).mount('#app')
+    </script>
+{% endblock %}
