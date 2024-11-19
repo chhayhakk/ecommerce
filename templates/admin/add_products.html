@@ -7,7 +7,9 @@
                     <div class="content-header">
                         <h2 class="content-title">Add New Product</h2>
                         <div>
-                            <a href="/product_list"><button class="btn btn-light rounded font-sm mr-5 text-body hover-up">Back</button></a>
+                            <a href="/product_list">
+                                <button class="btn btn-light rounded font-sm mr-5 text-body hover-up">Back</button>
+                            </a>
 
                         </div>
                     </div>
@@ -71,6 +73,7 @@
                                          style="width:30%; height:200px; margin-bottom: 30px;" v-if="products.image">
                                     <input id="image" type="file" @change="onFileChange">
                                 </div>
+
                                 <button class="btn btn-md rounded font-sm hover-up float-lg-end" type="submit">Save
                                 </button>
                             </form>
@@ -165,92 +168,102 @@
 
 {% endblock %}
 {% block script %}
-    <script type="module">
-        const {createApp} = Vue;
+   <script type="module">
+export default {
+  data() {
+    return {
+      products: {
+        product_code: '',
+        name: '',
+        description: '',
+        price: null,
+        current_stock: null,
+        cat_id: null,
+        image: 'static/admin/assets/images/upload.svg', // Default placeholder
+      },
+      image: null,
+      categories: [],
 
-        createApp({
-            delimiters: ['[[', ']]'],
-            data() {
-                return {
-                    products: {
-                        product_code: '',
-                        name: '',
-                        description: '',
-                        price: null,
-                        current_stock: null,
-                        cat_id: null,
-                        image: 'static/admin/assets/images/upload.svg', // Default placeholder
-                    },
-                    image: null,
-                    categories: []
-                };
-            },
-            mounted() {
-                this.fetchCategories();
-            },
-            methods: {
-                onFileChange(event) {
-                    const file = event.target.files[0];
-                    if (file) {
-                        this.image = file;
-                        this.products.image = URL.createObjectURL(file); // Preview the image
-                    }
-                },
-                async fetchCategories() {
-                    try {
-                        const response = await axios.get('http://127.0.0.1:5000/api/categories');
-                        this.categories = response.data;
-                    } catch (error) {
-                        console.error('Error fetching categories:', error);
-                    }
-                },
-                resetForm() {
-                    this.products = {
-                        product_code: '',
-                        name: '',
-                        description: '',
-                        price: null,
-                        current_stock: null,
-                        cat_id: null,
-                        image: 'static/admin/assets/images/upload.svg', // Reset to default placeholder
-                    };
-                    this.image = null; // Clear the image file reference
-                },
-                async submitProduct() {
-                    try {
-                        const formData = new FormData();
-                        formData.append('product_code', this.products.product_code);
-                        formData.append('name', this.products.name);
-                        formData.append('description', this.products.description);
-                        formData.append('price', this.products.price);
-                        formData.append('current_stock', this.products.current_stock);
-                        formData.append('cat_id', this.products.cat_id);
-                        if (this.image) {
-                            formData.append('image', this.image);
-                        }
+    };
+  },
+  mounted() {
+    this.fetchCategories();
+  },
+  methods: {
+    onFileChange(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.image = file;
+        this.products.image = URL.createObjectURL(file); // Preview the image
+        this.openModal(); // Show the crop modal
+      }
+    },
 
-                        // Log FormData entries for debugging
-                        for (const [key, value] of formData.entries()) {
-                            console.log(`${key}: ${value}`);
-                        }
+    openModal() {
+      this.isModalVisible = true;
+    },
 
-                        const response = await axios.post('http://127.0.0.1:5000/api/products', formData, {
-                            headers: {
-                                'Content-Type': 'multipart/form-data',
-                            },
-                        });
-
-                       swal("Success!", "Product added successfully!", "success");
-                        {#console.log(response.data);#}
-                        this.resetForm();
-                    } catch (error) {
-                        console.error('Error adding product:', error.response ? error.response.data : error);
-                    }
-                }
+    closeModal() {
+      this.isModalVisible = false;
+      // Destroy cropper instance when modal is closed
+      if (this.cropper) {
+        this.cropper.destroy();
+      }
+    },
 
 
-            },
-        }).mount('#app');
-    </script>
+    async fetchCategories() {
+      try {
+        const response = await axios.get('http://127.0.0.1:5000/api/categories');
+        this.categories = response.data;
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    },
+
+    resetForm() {
+      this.products = {
+        product_code: '',
+        name: '',
+        description: '',
+        price: null,
+        current_stock: null,
+        cat_id: null,
+        image: 'static/admin/assets/images/upload.svg', // Reset to default placeholder
+      };
+      this.image = null;
+    },
+
+    async submitProduct() {
+      try {
+        const formData = new FormData();
+        formData.append('product_code', this.products.product_code);
+        formData.append('name', this.products.name);
+        formData.append('description', this.products.description);
+        formData.append('price', this.products.price);
+        formData.append('current_stock', this.products.current_stock);
+        formData.append('cat_id', this.products.cat_id);
+
+        // Append the cropped image or the original image
+        const imageToSubmit = this.image;
+        if (imageToSubmit) {
+          formData.append('image', imageToSubmit);
+        }
+
+        const response = await axios.post('http://127.0.0.1:5000/api/products', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        swal("Success!", "Product added successfully!", "success");
+        this.resetForm();
+      } catch (error) {
+        console.error('Error adding product:', error.response ? error.response.data : error);
+      }
+    },
+  },
+};
+</script>
 
 {% endblock %}
