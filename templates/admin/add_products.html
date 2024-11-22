@@ -1,6 +1,35 @@
 {% extends "admin/index.html" %}
 {% block content %}
     <div id="app">
+        <!-- Modal for Image Cropping -->
+        <div v-if="isModalVisible" class="modal fade show" style="display: block;">
+            <div class="modal-dialog modal-lg custom-modal-width">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Crop Image</h5>
+                        <button type="button" class="btn-close" @click="closeModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <!-- Image to crop -->
+                                <img id="image-to-crop" :src="products.image"
+                                     alt="Image Preview"
+                                     style="max-width: 100%; height: auto;"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @click="closeModal">
+                            Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" @click="saveCroppedImage">
+                            Save Cropped Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <section class="content-main">
             <div class="row">
                 <div class="col-9">
@@ -56,7 +85,6 @@
                                     <div class="mb-4">
                                         <label class="form-label">Category</label>
                                         <select class="form-select" v-model="products.cat_id" required>
-                                            <!-- Bind to products.cat_id -->
                                             <option value="" disabled selected>Select a category</option>
                                             <option v-for="(category, index) in categories" :key="index"
                                                     :value="category.cat_id" id="cat_id">
@@ -69,10 +97,14 @@
                                     <h4>Image Upload</h4>
                                 </div>
                                 <div class="card-body">
-                                    <img :src="products.image" alt=""
-                                         style="width:30%; height:200px; margin-bottom: 30px;" v-if="products.image">
+                                    <!-- Default image until user uploads a new image -->
+                                    <img :src="products.image" alt="Image Preview"
+                                         style="width:200px; height:200px; margin-bottom: 30px;" v-if="products.image">
+
+                                    <!-- File input to choose image -->
                                     <input id="image" type="file" @change="onFileChange">
                                 </div>
+
 
                                 <button class="btn btn-md rounded font-sm hover-up float-lg-end" type="submit">Save
                                 </button>
@@ -81,189 +113,172 @@
 
                     </div>
 
-                    <!-- card end// -->
-                    {#                    <div class="card mb-4">#}
-                    {#                        <div class="card-header">#}
-                    {#                            <h4>Shipping</h4>#}
-                    {#                        </div>#}
-                    {#                        <div class="card-body">#}
-                    {#                            <form>#}
-                    {#                                <div class="row">#}
-                    {#                                    <div class="col-lg-6">#}
-                    {#                                        <div class="mb-4">#}
-                    {#                                            <label for="product_name" class="form-label">Width</label>#}
-                    {#                                            <input type="text" placeholder="inch" class="form-control" id="product_name">#}
-                    {#                                        </div>#}
-                    {#                                    </div>#}
-                    {#                                    <div class="col-lg-6">#}
-                    {#                                        <div class="mb-4">#}
-                    {#                                            <label for="product_name" class="form-label">Height</label>#}
-                    {#                                            <input type="text" placeholder="inch" class="form-control" id="product_name">#}
-                    {#                                        </div>#}
-                    {#                                    </div>#}
-                    {#                                </div>#}
-                    {#                                <div class="mb-4">#}
-                    {#                                    <label for="product_name" class="form-label">Weight</label>#}
-                    {#                                    <input type="text" placeholder="gam" class="form-control" id="product_name">#}
-                    {#                                </div>#}
-                    {#                                <div class="mb-4">#}
-                    {#                                    <label for="product_name" class="form-label">Shipping fees</label>#}
-                    {#                                    <input type="text" placeholder="$" class="form-control" id="product_name">#}
-                    {#                                </div>#}
-                    {#                            </form>#}
-                    {#                        </div>#}
-                    {#                    </div> <!-- card end// -->#}
                 </div>
-                {#                <div class="col-lg-3">#}
-                {#                    <div class="card mb-4">#}
-                {#                        <div class="card-header">#}
-                {#                            <h4>Media</h4>#}
-                {#                        </div>#}
-                {#                        <div class="card-body">#}
-                {##}
-                {#                                <img src="static/admin/assets/imgs/theme/upload.svg" alt="" style="width:600px; height:100px; margin-bottom: 30px">#}
-                {##}
-                {#<input class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" id="file_input" type="file">#}
-                {##}
-                {##}
-                {#                        </div>#}
-                {#                    </div> <!-- card end// -->#}
-                {#                    <div class="card mb-4">#}
-                {#                        <div class="card-header">#}
-                {#                            <h4>Organization</h4>#}
-                {#                        </div>#}
-                {#                        <div class="card-body">#}
-                {#                            <div class="row gx-2">#}
-                {#                                <div class="col-sm-6 mb-3">#}
-                {#                                    <label class="form-label">Category</label>#}
-                {#                                    <select class="form-select">#}
-                {#                                        <option> Automobiles </option>#}
-                {#                                        <option> Home items </option>#}
-                {#                                        <option> Electronics </option>#}
-                {#                                        <option> Smartphones </option>#}
-                {#                                        <option> Sport items </option>#}
-                {#                                        <option> Baby and Tous </option>#}
-                {#                                    </select>#}
-                {#                                </div>#}
-                {#                                <div class="col-sm-6 mb-3">#}
-                {#                                    <label class="form-label">Sub-category</label>#}
-                {#                                    <select class="form-select">#}
-                {#                                        <option> Nissan </option>#}
-                {#                                        <option> Honda </option>#}
-                {#                                        <option> Mercedes </option>#}
-                {#                                        <option> Chevrolet </option>#}
-                {#                                    </select>#}
-                {#                                </div>#}
-                {#                                <div class="mb-4">#}
-                {#                                    <label for="product_name" class="form-label">Tags</label>#}
-                {#                                    <input type="text" class="form-control">#}
-                {#                                </div>#}
-                {#                            </div> <!-- row.// -->#}
-                {#                        </div>#}
-                {#                    </div> <!-- card end// -->#}
-                {#                </div>#}
+
             </div>
         </section>
     </div>
 
 {% endblock %}
 {% block script %}
-   <script type="module">
-export default {
-  data() {
-    return {
-      products: {
-        product_code: '',
-        name: '',
-        description: '',
-        price: null,
-        current_stock: null,
-        cat_id: null,
-        image: 'static/admin/assets/images/upload.svg', // Default placeholder
-      },
-      image: null,
-      categories: [],
+    <script type="module">
+        const {createApp} = Vue;
 
-    };
-  },
-  mounted() {
-    this.fetchCategories();
-  },
-  methods: {
-    onFileChange(event) {
-      const file = event.target.files[0];
-      if (file) {
-        this.image = file;
-        this.products.image = URL.createObjectURL(file); // Preview the image
-        this.openModal(); // Show the crop modal
-      }
-    },
+        createApp({
+            delimiters: ['[[', ']]'],
+            data() {
+                return {
+                    products: {
+                        product_code: '',
+                        name: '',
+                        description: '',
+                        price: null,
+                        current_stock: null,
+                        cat_id: null,
+                        image: 'static/admin/assets/images/upload.svg', // Default image
+                    },
+                    image: null, // The selected file
+                    categories: [],
+                    cropper: null, // Cropper.js instance
+                    isModalVisible: false, // Modal visibility
+                    isImageCropped: false, // Whether the image has been cropped
+                    croppedImageBlob: ''
+                };
+            },
+            mounted() {
+                this.fetchCategories();
+            },
+            methods: {
+                // Triggered when the user selects a file
+                onFileChange(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        this.image = file;
+                        this.products.image = URL.createObjectURL(file); // Preview the image
 
-    openModal() {
-      this.isModalVisible = true;
-    },
+                        // Only show the modal if a valid file is selected
+                        this.openModal();
+                    }
+                },
 
-    closeModal() {
-      this.isModalVisible = false;
-      // Destroy cropper instance when modal is closed
-      if (this.cropper) {
-        this.cropper.destroy();
-      }
-    },
+                // Show the modal with the image preview and cropper
+                openModal() {
+                    this.isModalVisible = true;
+                    this.isImageCropped = false; // Reset the cropping state
+                    this.$nextTick(() => {
+                        this.initCropper(); // Initialize the cropper after the modal is shown
+                    });
+                },
+
+                // Close the modal and destroy the cropper instance
+                closeModal() {
+                    this.isModalVisible = false;
+                    this.isImageCropped = false; // Reset cropping state when modal is closed
+                    if (this.cropper) {
+                        this.cropper.destroy(); // Destroy the cropper instance to clean up
+                        this.cropper = null;
+                    }
+                },
+
+                // Initialize the Cropper.js on the image
+                initCropper() {
+                    const imageElement = document.getElementById('image-to-crop');
+                    if (this.cropper) {
+                        this.cropper.destroy(); // Destroy previous cropper instance if it exists
+                    }
+                    this.cropper = new Cropper(imageElement, {
+                        aspectRatio: 1, // Aspect ratio of the cropper (can be changed)
+                        viewMode: 2,    // Set the view mode for the cropper
+                        preview: '.preview', // Optional preview area (can be customized)
+                    });
+                },
+
+                // Save the cropped image and update the preview
+                saveCroppedImage() {
+                    if (this.cropper) {
+                        const canvas = this.cropper.getCroppedCanvas();
+                        canvas.toBlob((blob) => {
+                            // Create a URL for the cropped image and set the preview
+                            const croppedImageUrl = URL.createObjectURL(blob);
+                            this.products.image = croppedImageUrl; // Update the preview of the cropped image
+                            this.isImageCropped = true; // Set the flag to indicate that the image has been cropped
+                            this.croppedImageBlob = blob; // Store the cropped image as a blob to be sent later
+                            this.closeModal(); // Close the modal after cropping
+                        });
+                    }
+                },
 
 
-    async fetchCategories() {
-      try {
-        const response = await axios.get('http://127.0.0.1:5000/api/categories');
-        this.categories = response.data;
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-    },
+                // Fetch categories from the API
+                async fetchCategories() {
+                    try {
+                        const response = await axios.get('http://127.0.0.1:5000/api/categories');
+                        this.categories = response.data;
+                    } catch (error) {
+                        console.error('Error fetching categories:', error);
+                    }
+                },
 
-    resetForm() {
-      this.products = {
-        product_code: '',
-        name: '',
-        description: '',
-        price: null,
-        current_stock: null,
-        cat_id: null,
-        image: 'static/admin/assets/images/upload.svg', // Reset to default placeholder
-      };
-      this.image = null;
-    },
+                // Reset the form and preview image
+                resetForm() {
+                    this.products = {
+                        product_code: '',
+                        name: '',
+                        description: '',
+                        price: null,
+                        current_stock: null,
+                        cat_id: null,
+                        image: 'static/admin/assets/images/upload.svg', // Reset to default placeholder
+                    };
+                    this.image = null;
+                    this.isImageCropped = false;
+                },
 
-    async submitProduct() {
-      try {
-        const formData = new FormData();
-        formData.append('product_code', this.products.product_code);
-        formData.append('name', this.products.name);
-        formData.append('description', this.products.description);
-        formData.append('price', this.products.price);
-        formData.append('current_stock', this.products.current_stock);
-        formData.append('cat_id', this.products.cat_id);
+                // Submit the form with the cropped image (or original image)
+                async submitProduct() {
+                    try {
+                        const formData = new FormData();
+                        formData.append('product_code', this.products.product_code);
+                        formData.append('name', this.products.name);
+                        formData.append('description', this.products.description);
+                        formData.append('price', this.products.price);
+                        formData.append('current_stock', this.products.current_stock);
+                        formData.append('cat_id', this.products.cat_id);
 
-        // Append the cropped image or the original image
-        const imageToSubmit = this.image;
-        if (imageToSubmit) {
-          formData.append('image', imageToSubmit);
-        }
+                        // Append the original image (if any)
+                        if (this.image) {
+                            formData.append('image', this.image); // Send the original image
+                        }
+                        // If the user cropped the image, append both the cropped and original versions to the formData
+                        if (this.croppedImageBlob) {
+                            formData.append('cropped_image', this.croppedImageBlob, this.image.name); // Send the cropped image
+                        }
 
-        const response = await axios.post('http://127.0.0.1:5000/api/products', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+                        // Submit the form with both images
+                        await this.submitFormData(formData); // Submit the form data with both images
+                    } catch (error) {
+                        console.error('Error adding product:', error.response ? error.response.data : error);
+                    }
+                }
+                ,
 
-        swal("Success!", "Product added successfully!", "success");
-        this.resetForm();
-      } catch (error) {
-        console.error('Error adding product:', error.response ? error.response.data : error);
-      }
-    },
-  },
-};
-</script>
-
+                // Submit the form data
+                async submitFormData(formData) {
+                    try {
+                        const response = await axios.post('http://127.0.0.1:5000/api/products', formData, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                            },
+                        });
+                        swal("Success!", "Product added successfully!", "success");
+                        this.resetForm(); // Reset the form after successful submission
+                    } catch (error) {
+                        console.error('Error submitting form:', error.response ? error.response.data : error);
+                    }
+                }
+            },
+        }).mount('#app');
+    </script>
 {% endblock %}
+
+

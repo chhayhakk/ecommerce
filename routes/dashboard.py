@@ -3,9 +3,14 @@ from app import app, render_template
 import mysql.connector
 import os
 from werkzeug.utils import secure_filename
+from io import BytesIO
+from PIL import Image
+
 
 UPLOAD_FOLDER = 'static/admin/assets/images/'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['CROPPED_FOLDER'] = 'static/admin/assets/cropped'
+app.config['THUMBNAIL_FOLDER'] = 'static/admin/assets/thumbnails'
 
 from flask_mysqldb import MySQL
 
@@ -177,7 +182,7 @@ def get_data():
 @app.route('/api/products', methods=['POST'])
 def add_product_api():
     try:
-        # Collect data
+        # Collect data from the form
         product_code = request.form['product_code']
         name = request.form['name']
         description = request.form['description']
@@ -185,33 +190,66 @@ def add_product_api():
         current_stock = request.form['current_stock']
         cat_id = request.form['cat_id']
 
-        # Handle image upload
+
         image = request.files.get('image')
+        cropped_image = request.files.get('cropped_image')
+
         image_name = None
+
+        def compress_image(image_file, save_path):
+            image_file.seek(0, os.SEEK_END)  # Move pointer to the end to check the size
+            file_size = image_file.tell()  # Get the size of the file in bytes
+
+            print(file_size/1024/1024)
+
+            if file_size > 2 * 1024 * 1024:
+
+                image_file.seek(0)  # Reset pointer back to the start before opening with Pillow
+                img = Image.open(image_file)
+                img = img.convert("RGB")  # Ensure it’s in RGB mode (needed for saving .jpeg)
+                img.save(save_path, format='JPEG', quality=75)  # Save with reduced quality
+                return True
+            else:
+                # If the file size is acceptable, save it directly
+                image_file.seek(0)  # Reset pointer back to the start
+                image_file.save(save_path)
+                return False
+
+        # Process the original image
         if image:
+            # Secure the filename and define paths
             filename = secure_filename(image.filename)
-            image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            image.save(image_path)
+            image_path = os.path.join(app.config['THUMBNAIL_FOLDER'], filename)
+
+            # Compress the image if necessary
+            compress_image(image, image_path)
             image_name = filename
 
-        # Log for debugging
-        print(f"Received data: {product_code}, {name}, {description}, {price}, {current_stock}, {cat_id}, {image_path}")
+        # Process the cropped image (if available)
+        if cropped_image:
+            cropped_filename = secure_filename(cropped_image.filename)
+            cropped_path = os.path.join(app.config['CROPPED_FOLDER'], cropped_filename)
 
-        # SQL Insert query
+            # Compress the cropped image if necessary
+            compress_image(cropped_image, cropped_path)
+            cropped_image_name = cropped_filename
+
+        # SQL Insert query (store both the original and cropped image if they exist)
         cur = mysql.connection.cursor()
         cur.execute("""
             INSERT INTO tbl_products (code, name, description, price, current_stock, cat_id, image)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, (product_code, name, description, price, current_stock, int(cat_id), image_name))
 
-        mysql.connection.commit()  # Commit the changes
+        mysql.connection.commit()  # Commit the changes to the database
         cur.close()
 
         return jsonify({'message': 'Product added successfully!'}), 201
 
     except Exception as e:
-        print(f"Error: {e}")  # Print error for debugging
+        print(f"Error: {e}")
         return jsonify({'error': 'Failed to add product', 'details': str(e)}), 400
+
 
 
 def allowed_file(filename):

@@ -147,10 +147,18 @@
                             <div class="col-lg-2 col-sm-4 col-8 flex-grow-1 col-name">
                                 <a class="itemside" href="#">
                                     <div class="left">
-                                        <img :src="`/static/admin/assets/images/${product.image}`"
+
+                                        <img :src="`/static/admin/assets/cropped/${product.image}`"
                                              class="img-sm img-thumbnail"
+                                             :title="product.name"
+                                             @mouseover="showTooltip($event, `/static/admin/assets/thumbnails/${product.image}`)"
+                                             @mouseleave="hideTooltip"
                                              alt="Item">
+
+
                                     </div>
+
+
                                     <div class="info">
                                         <h6 class="mb-0">[[ product.name ]]</h6>
                                     </div>
@@ -183,7 +191,9 @@
                         </div> <!-- row .// -->
                     </article> <!-- itemlist  .// -->
 
-                </div> <!-- card-body end// -->
+                </div>
+
+                <!-- card-body end// -->
             </div> <!-- card end// -->
             <div class="pagination-area mt-30 mb-50">
                 <nav aria-label="Page navigation example">
@@ -238,8 +248,6 @@
 {% endblock %}
 {% block script %}
     <script type="module">
-
-
         const {createApp} = Vue
         createApp({
             delimiters: ['[[', ']]'],
@@ -260,6 +268,7 @@
                         cat_id: null,
                         image: null,
                         cat_name: '',
+
                     },
                     image: null,
                     deleteProductId: null
@@ -276,6 +285,24 @@
 
             },
             methods: {
+                showTooltip(event, imageUrl) {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'image-tooltip';
+                    tooltip.style.position = 'absolute';
+                    tooltip.style.top = `${event.clientY - 60}px`;
+                    tooltip.style.left = `${event.clientX + 10}px`;
+                    tooltip.innerHTML = `<img src="${imageUrl}" class="tooltip-image"/>`;
+                    tooltip.id = 'product-tooltip';
+
+                    document.body.appendChild(tooltip);
+                },
+
+                hideTooltip() {
+                    const tooltip = document.getElementById('product-tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                },
                 openDeleteModal(product) {
                     this.currentProduct = product;
                     this.deleteProductId = product.id;
