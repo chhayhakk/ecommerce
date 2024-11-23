@@ -2,6 +2,28 @@
 {% block content %}
     <!-- Main modal -->
     <div id="app">
+        <div v-if="isModalVisible" class="modal fade show" style="display: block;">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Crop Image</h5>
+                        <button type="button" class="btn-close" @click="closeCropModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div>
+                            <img id="image-to-crop" :src="currentProduct.image || ''" alt="Image Preview"
+                                 style="max-width: 100%; height: auto;"/>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @click="closeCropModal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="saveCroppedImage">Save Cropped Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="crud-modal" tabindex="-1" aria-hidden="true"
              class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
             <div class="relative p-4 w-full max-w-md max-h-full">
@@ -247,156 +269,194 @@
 
 {% endblock %}
 {% block script %}
-    <script type="module">
-        const {createApp} = Vue
-        createApp({
-            delimiters: ['[[', ']]'],
-            created() {
-
-            },
-            data() {
-                return {
-                    products: [],
-                    categories: [],
-                    currentProduct: { // For editing a product
-                        id: null,
-                        product_code: '',
-                        name: '',
-                        description: '',
-                        price: null,
-                        current_stock: null,
-                        cat_id: null,
-                        image: null,
-                        cat_name: '',
-
-                    },
+<script type="module">
+    const {createApp} = Vue
+    createApp({
+        delimiters: ['[[', ']]'],
+        data() {
+            return {
+                products: [],
+                categories: [],
+                currentProduct: {
+                    id: null,
+                    product_code: '',
+                    name: '',
+                    description: '',
+                    price: null,
+                    current_stock: null,
+                    cat_id: null,
                     image: null,
-                    deleteProductId: null
-
-                }
-            },
-            mounted() {
-                const modalElement = document.getElementById('crud-modal');
-                this.modalInstance = new Modal(modalElement);
-                const deleteModalElement = document.getElementById('delete-modal');
-                this.deleteModalInstance = new Modal(deleteModalElement);
-                this.getData()
-                this.fetchCategories()
-
-            },
-            methods: {
-                showTooltip(event, imageUrl) {
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'image-tooltip';
-                    tooltip.style.position = 'absolute';
-                    tooltip.style.top = `${event.clientY - 60}px`;
-                    tooltip.style.left = `${event.clientX + 10}px`;
-                    tooltip.innerHTML = `<img src="${imageUrl}" class="tooltip-image"/>`;
-                    tooltip.id = 'product-tooltip';
-
-                    document.body.appendChild(tooltip);
+                    cat_name: '',
+                    original_image_name: '', // Store the original image filename
                 },
-
-                hideTooltip() {
-                    const tooltip = document.getElementById('product-tooltip');
-                    if (tooltip) {
-                        tooltip.remove();
-                    }
-                },
-                openDeleteModal(product) {
-                    this.currentProduct = product;
-                    this.deleteProductId = product.id;
-                    this.deleteModalInstance.show();
-                },
-                closeDeleteModal() {
-                    this.deleteModalInstance.hide();
-                },
-                onFileChange(event) {
-                    const file = event.target.files[0];
-                    if (file) {
-                        this.image = file;
-                        this.currentProduct.image = URL.createObjectURL(file); // Preview the image
-                    }
-                },
-                openModel(product) {
-                    this.currentProduct = {
-                        id: product.id,
-                        product_code: product.code,
-                        name: product.name,
-                        description: product.description,
-                        price: product.price,
-                        current_stock: product.current_stock,
-                        cat_id: product.cat_id,
-                        image: product.image ? `/static/admin/assets/images/${product.image}` : null
-                    };
-                    console.log('Opening modal for product:', this.currentProduct);
-                    this.modalInstance.show();
-                },
-                closeModal() {
-                    this.modalInstance.hide(); // Hide modal
-                },
-                async getData() {
-                    try {
-                        const response = await axios.get('http://127.0.0.1:5000/api/products');
-                        this.products = response.data;
-                    } catch (error) {
-                        console.error('Error fetching data:', error);
-                    }
-                },
-                async fetchCategories() {
-                    try {
-                        const response = await axios.get('http://127.0.0.1:5000/api/categories');
-                        this.categories = response.data;
-                    } catch (error) {
-                        console.error('Error fetching categories:', error);
-                    }
-                },
-                async confirmEdit() {
-                    try {
-                        const formData = new FormData();
-                        formData.append('product_code', this.currentProduct.product_code);  // Use the correct property name
-                        formData.append('name', this.currentProduct.name);
-                        formData.append('description', this.currentProduct.description);
-                        formData.append('price', this.currentProduct.price);
-                        formData.append('current_stock', this.currentProduct.current_stock);
-                        formData.append('cat_id', this.currentProduct.cat_id); // This should be the selected category ID
-
-                        // Check if there's an image file to upload
-                        if (this.image) {
-                            formData.append('image', this.image);
-                        }
-
-                        // Send PUT request to update the product
-                        const response = await axios.put(`http://127.0.0.1:5000/api/products/${this.currentProduct.id}`, formData, {
-                            headers: {
-                                'Content-Type': 'multipart/form-data', // Important for file uploads
-                            },
-                        });
-
-                        // Handle success response
-                        alert('Product updated successfully!');
-                        this.getData();
-                        this.modalInstance.hide(); // Hide modal after update
-                    } catch (error) {
-                        // Handle error response
-                        console.error('Error updating product:', error.response ? error.response.data : error);
-                        alert('Failed to update product: ' + (error.response ? error.response.data.error : 'Unknown error occurred.'));
-                    }
-                },
-                async deleteProduct() {
-                    try {
-                        const response = await axios.delete(`http://127.0.0.1:5000/api/products/${this.deleteProductId}`);
-                        if (response.status === 200) {
-                            this.getData(); // Refresh categories after deletion
-                            this.closeDeleteModal(); // Close the delete modal
-                        }
-                    } catch (error) {
-                        console.error('Error deleting category:', error.response ? error.response.data : error.message);
-                    }
-                }
-
-
+                image: null, // Store the original image file
+                croppedImage: null, // Store the cropped image (Data URL)
+                deleteProductId: null,
+                cropper: null, // Store the CropperJS instance
+                isModalVisible: false, // To control crop modal visibility
             }
-        }).mount('#app')
-    </script>
+        },
+        mounted() {
+            const modalElement = document.getElementById('crud-modal');
+            this.modalInstance = new Modal(modalElement);
+            const deleteModalElement = document.getElementById('delete-modal');
+            this.deleteModalInstance = new Modal(deleteModalElement);
+            this.getData();
+            this.fetchCategories();
+        },
+        methods: {
+            // Tooltip for displaying image preview on hover
+            showTooltip(event, imageUrl) {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'image-tooltip';
+                tooltip.style.position = 'absolute';
+                tooltip.style.top = `${event.clientY - 60}px`;
+                tooltip.style.left = `${event.clientX + 10}px`;
+                tooltip.innerHTML = `<img src="${imageUrl}" class="tooltip-image"/>`;
+                tooltip.id = 'product-tooltip';
+                document.body.appendChild(tooltip);
+            },
+            hideTooltip() {
+                const tooltip = document.getElementById('product-tooltip');
+                if (tooltip) {
+                    tooltip.remove();
+                }
+            },
+            openDeleteModal(product) {
+                this.currentProduct = product;
+                this.deleteProductId = product.id;
+                this.deleteModalInstance.show();
+            },
+            closeDeleteModal() {
+                this.deleteModalInstance.hide();
+            },
+            onFileChange(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.image = file; // Store the original image
+                    this.currentProduct.image = URL.createObjectURL(file); // Preview the image
+                    this.currentProduct.original_image_name = file.name; // Store the original image name
+                    this.openCropModal(); // Open the crop modal
+                }
+            },
+            openModel(product) {
+                this.currentProduct = {
+                    id: product.id,
+                    product_code: product.code,
+                    name: product.name,
+                    description: product.description,
+                    price: product.price,
+                    current_stock: product.current_stock,
+                    cat_id: product.cat_id,
+                    image: product.image ? `/static/admin/assets/cropped/${product.image}` : null,
+                    original_image_name: product.image, // Store the original image filename
+                };
+                this.modalInstance.show();
+            },
+            closeModal() {
+                this.modalInstance.hide(); // Hide modal
+            },
+            async getData() {
+                try {
+                    const response = await axios.get('http://127.0.0.1:5000/api/products');
+                    this.products = response.data;
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                }
+            },
+            async fetchCategories() {
+                try {
+                    const response = await axios.get('http://127.0.0.1:5000/api/categories');
+                    this.categories = response.data;
+                } catch (error) {
+                    console.error('Error fetching categories:', error);
+                }
+            },
+            openCropModal() {
+                this.isModalVisible = true; // Show the crop modal
+                this.$nextTick(() => {
+                    const imageElement = document.getElementById('image-to-crop');
+                    this.cropper = new Cropper(imageElement, {
+                        aspectRatio: 1, // You can change the aspect ratio as needed
+                        viewMode: 1,
+                        autoCropArea: 0.8,
+                    });
+                });
+            },
+            closeCropModal() {
+                this.isModalVisible = false; // Hide the crop modal
+                this.cropper.destroy(); // Destroy cropper instance
+            },
+            saveCroppedImage() {
+                const canvas = this.cropper.getCroppedCanvas();
+                this.croppedImage = canvas.toDataURL('image/jpeg'); // Get the cropped image data URL
+                this.currentProduct.image = this.croppedImage; // Set the cropped image to the product
+                this.closeCropModal(); // Close the crop modal
+            },
+            async confirmEdit() {
+                try {
+                    const formData = new FormData();
+                    formData.append('product_code', this.currentProduct.product_code);
+                    formData.append('name', this.currentProduct.name);
+                    formData.append('description', this.currentProduct.description);
+                    formData.append('price', this.currentProduct.price);
+                    formData.append('current_stock', this.currentProduct.current_stock);
+                    formData.append('cat_id', this.currentProduct.cat_id);
+
+                    // Append the original image (if provided)
+                    if (this.image) {
+                        formData.append('image', this.image); // Original image file
+                    }
+
+                    // Append the cropped image (if available)
+                    if (this.croppedImage) {
+                        // Convert the cropped image from Data URL to Blob
+                        const blob = this.dataURLtoBlob(this.croppedImage);
+
+                        // Use the original image filename or the cropped one if necessary
+                        const croppedImageName = this.currentProduct.original_image_name;
+
+                        // Set the cropped image file with the same name as original image
+                        formData.append('cropped_image', blob, croppedImageName);
+                    }
+
+                    const response = await axios.put(`http://127.0.0.1:5000/api/products/${this.currentProduct.id}`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+                     swal("Success!", "Product updated successfully!", "success");
+                    this.getData();
+                    this.modalInstance.hide();
+                } catch (error) {
+                    console.error('Error updating product:', error.response ? error.response.data : error);
+                    alert('Failed to update product');
+                }
+            },
+            async deleteProduct() {
+                try {
+                    const response = await axios.delete(`http://127.0.0.1:5000/api/products/${this.deleteProductId}`);
+                    if (response.status === 200) {
+                        this.getData(); // Refresh products after deletion
+                        this.closeDeleteModal(); // Close the delete modal
+                    }
+                } catch (error) {
+                    console.error('Error deleting product:', error.response ? error.response.data : error.message);
+                }
+            },
+            dataURLtoBlob(dataURL) {
+                const byteString = atob(dataURL.split(',')[1]);
+                const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                return new Blob([ab], {type: mimeString});
+            }
+        }
+    }).mount('#app');
+</script>
+
+
 {% endblock %}

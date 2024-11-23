@@ -199,11 +199,9 @@ def add_product_api():
         def compress_image(image_file, save_path):
             image_file.seek(0, os.SEEK_END)  # Move pointer to the end to check the size
             file_size = image_file.tell()  # Get the size of the file in bytes
-
             print(file_size/1024/1024)
 
             if file_size > 2 * 1024 * 1024:
-
                 image_file.seek(0)  # Reset pointer back to the start before opening with Pillow
                 img = Image.open(image_file)
                 img = img.convert("RGB")  # Ensure it’s in RGB mode (needed for saving .jpeg)
@@ -266,17 +264,18 @@ def update_product_api(product_id):
         description = request.form.get('description')
         price = request.form.get('price')
         current_stock = request.form.get('current_stock')
-        cat_id = request.form.get('cat_id')  # This should come from the select element
-        print(f"Updating Product ID: {id}")
-        print(
-            f"Product Code: {product_code}, Name: {name}, Description: {description}, Price: {price}, Current Stock: {current_stock}, Category ID: {cat_id}")
+        cat_id = request.form.get('cat_id')
 
         # Ensure cat_id is an integer
         if not cat_id.isdigit():
             raise ValueError("cat_id must be a valid integer")
+
         # Handle image upload
         image = request.files.get('image')
+        cropped_image = request.files.get('cropped_image')  # Get the cropped image from the request
+
         image_name = None
+        cropped_image_name = None
 
         # Fetch the current image from the database before attempting to update
         cur = mysql.connection.cursor()
@@ -284,14 +283,27 @@ def update_product_api(product_id):
         existing_product = cur.fetchone()
         current_image_name = existing_product[0] if existing_product else None
 
+        # If a new image is uploaded, save it and update image_name
         if image:
             filename = secure_filename(image.filename)
-            image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            image_path = os.path.join(app.config['THUMBNAIL_FOLDER'], filename)
             image.save(image_path)
             image_name = filename
         else:
             # If no new image is uploaded, keep the existing image name
             image_name = current_image_name
+
+        # If a cropped image is uploaded, save it with the same name as the original image
+        if cropped_image:
+            # Use the original image name for the cropped image
+            cropped_filename = secure_filename(cropped_image.filename)
+            # You could add a suffix like '_cropped' if needed, for example:
+            # cropped_filename = f"{os.path.splitext(current_image_name)[0]}_cropped{os.path.splitext(cropped_filename)[1]}"
+            cropped_path = os.path.join(app.config['CROPPED_FOLDER'], cropped_filename)
+            cropped_image.save(cropped_path)
+            cropped_image_name = cropped_filename
+        else:
+            cropped_image_name = current_image_name  # If no cropped image, retain the existing image
 
         # Update the product in the database
         cur.execute("""
@@ -299,7 +311,7 @@ def update_product_api(product_id):
             SET code = %s, name = %s, description = %s, price = %s,
                 current_stock = %s, cat_id = %s, image = %s
             WHERE id = %s
-        """, (product_code, name, description, price, current_stock, int(cat_id), image_name, product_id))
+        """, (product_code, name, description, price, current_stock, int(cat_id), cropped_image_name, product_id))
 
         mysql.connection.commit()
         cur.close()
@@ -309,6 +321,7 @@ def update_product_api(product_id):
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': 'Failed to update product', 'details': str(e)}), 400
+
 
 
 @app.route('/api/products/<int:product_id>', methods=['DELETE'])
