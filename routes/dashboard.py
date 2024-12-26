@@ -1,3 +1,5 @@
+import shutil
+
 from flask import jsonify, request
 from app import app, render_template
 import mysql.connector
@@ -11,7 +13,7 @@ UPLOAD_FOLDER = 'static/admin/assets/images/'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['CROPPED_FOLDER'] = 'static/admin/assets/cropped'
 app.config['THUMBNAIL_FOLDER'] = 'static/admin/assets/thumbnails'
-
+flutter_products_path = 'D:\\flutter\\finalflutter\\assets\\products'
 from flask_mysqldb import MySQL
 
 app.config['MYSQL_HOST'] = 'localhost'
@@ -28,137 +30,6 @@ def home():
     module = 'Dashboard'
     return render_template("admin/dashboard.html", module=module)
 
-
-@app.route('/api/users', methods=['GET'])
-def get_user():
-    cur = mysql.connection.cursor()
-    cur.execute(
-        "SELECT user_id, profile, code, name, phone, address, gender, role, email, password, status FROM tbl_users;")
-    users = cur.fetchall()
-
-    users_list = [
-        {"user_id": user_id, "profile": profile, "code": code, "name": name, "phone": phone, "address": address,
-         "gender": gender, "role": role, "email": email, "password": password, "status": status, } for
-        (user_id, profile, code, name, phone, address, gender, role, email, password, status) in users]
-    return jsonify(users_list)
-
-
-@app.route('/api/users', methods=['POST'])
-def add_user():
-    try:
-        # Collect data
-        code = request.form['code']
-        name = request.form['name']
-        address = request.form['address']
-        role = request.form['role']
-        gender = request.form['gender']
-        password = request.form['password']
-        phone = request.form['phone']
-        email = request.form['email']
-        status = request.form['status']
-
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT * FROM tbl_users WHERE email = %s", (email,))
-        existing_user = cur.fetchone()
-        if existing_user:
-            return jsonify({'error': 'email_exists', 'message': 'Email already exists!'}), 400
-        # Handle image upload
-        image = request.files.get('image')
-        image_name = None
-        if image:
-            filename = secure_filename(image.filename)
-            image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            image.save(image_path)
-            image_name = filename
-
-
-        # cur = mysql.connection.cursor()
-        cur.execute("""
-                    INSERT INTO tbl_users (code, name,profile ,address, role, gender, email ,phone, password, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s,%s, %s, %s)
-                """, (code, name, image_name, address, role, gender, email ,phone, password, status))
-
-        mysql.connection.commit()  # Commit the changes
-        cur.close()
-
-        return jsonify({'message': 'User added successfully!'}), 201
-
-    except Exception as e:
-            print(f"Error: {e}")  # Print error for debugging
-            return jsonify({'error': 'user to add product', 'details': str(e)}), 400
-
-
-@app.route('/api/users/<int:user_id>', methods=['PUT'])
-def update_user(user_id):
-    try:
-        # Collect data
-        code = request.form['code']
-        name = request.form['name']
-        address = request.form['address']
-        role = request.form['role']
-        gender = request.form['gender']
-        password = request.form['password']
-        phone = request.form['phone']
-        email = request.form['email']
-        status = request.form['status']
-
-        cur = mysql.connection.cursor()
-
-        # Check if the email exists and belongs to another user
-        cur.execute("SELECT * FROM tbl_users WHERE email = %s AND user_id != %s", (email, user_id))
-        existing_user = cur.fetchone()
-        if existing_user:
-            return jsonify({'error': 'email_exists', 'message': 'Email already exists!'}), 400
-
-        # Handle image upload
-        image = request.files.get('image')
-        image_name = None
-        if image:
-            filename = secure_filename(image.filename)
-            image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            image.save(image_path)
-            image_name = filename
-
-            # Update the user information, including the new image if uploaded
-            cur.execute("""
-                UPDATE tbl_users 
-                SET code = %s, name = %s, profile = %s, address = %s, role = %s, 
-                    gender = %s, email = %s, phone = %s, password = %s, status = %s 
-                WHERE user_id = %s
-            """, (code, name, image_name, address, role, gender, email, phone, password, status, user_id))
-        else:
-            # Update user info without changing the image
-            cur.execute("""
-                UPDATE tbl_users 
-                SET code = %s, name = %s, address = %s, role = %s, 
-                    gender = %s, email = %s, phone = %s, password = %s, status = %s 
-                WHERE user_id = %s
-            """, (code, name, address, role, gender, email, phone, password, status, user_id))
-
-        mysql.connection.commit()  # Commit the changes
-        cur.close()
-
-        return jsonify({'message': 'User updated successfully!'}), 200
-
-    except Exception as e:
-        print(f"Error: {e}")  # Print error for debugging
-        return jsonify({'error': 'user_update_failed', 'details': str(e)}), 400
-
-
-@app.route('/api/users/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    try:
-        cur = mysql.connection.cursor()
-        cur.execute("DELETE FROM tbl_users WHERE user_id = %s", (user_id,))
-        mysql.connection.commit()  # Commit the changes
-        cur.close()
-
-        return jsonify({'message': 'User deleted successfully!'}), 204
-    except Exception as e:
-        print(f"Error: {e}")  # Print error for debugging
-        return jsonify({'error': 'user deletion failed', 'details': str(e)}), 400
-
-
 @app.route('/api/products', methods=['GET'])
 def get_data():
     cur = mysql.connection.cursor()
@@ -170,14 +41,35 @@ def get_data():
     results = cur.fetchall()
     columns = [column[0] for column in cur.description]
 
-    # Convert each row to a dictionary
     products = []
     for row in results:
         product = {columns[i]: row[i] for i in range(len(columns))}
         products.append(product)
-    cur.close()
-    return jsonify(products)
 
+    cur.close()
+
+    return products
+
+@app.route('/api/products-data/<int:id>', methods=['GET'])
+def get_data_byID(id):
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT p.*, c.cat_name 
+        FROM tbl_products p
+        LEFT JOIN tbl_categories c ON p.cat_id = c.cat_id
+        WHERE p.id = %s;
+    """, (id,))
+    row = cur.fetchone()
+    columns = [column[0] for column in cur.description]
+
+    product = {columns[i]: row[i] for i in range(len(columns))} if row else None
+
+    cur.close()
+
+    if product is None:
+        return jsonify({'error': 'Product not found'}), 404
+
+    return product
 
 @app.route('/api/products', methods=['POST'])
 def add_product_api():
@@ -219,9 +111,12 @@ def add_product_api():
             filename = secure_filename(image.filename)
             image_path = os.path.join(app.config['THUMBNAIL_FOLDER'], filename)
 
-            # Compress the image if necessary
+        # Compress the image if necessary
             compress_image(image, image_path)
             image_name = filename
+        #Insert into products_folder in flutter
+            final_image_path = os.path.join(flutter_products_path, filename)
+            shutil.copy(image_path, final_image_path)
 
         # Process the cropped image (if available)
         if cropped_image:
@@ -295,9 +190,8 @@ def update_product_api(product_id):
 
         # If a cropped image is uploaded, save it with the same name as the original image
         if cropped_image:
-            # Use the original image name for the cropped image
+
             cropped_filename = secure_filename(cropped_image.filename)
-            # You could add a suffix like '_cropped' if needed, for example:
             # cropped_filename = f"{os.path.splitext(current_image_name)[0]}_cropped{os.path.splitext(cropped_filename)[1]}"
             cropped_path = os.path.join(app.config['CROPPED_FOLDER'], cropped_filename)
             cropped_image.save(cropped_path)
@@ -369,7 +263,9 @@ def get_categories():
 
     category_list = [{"cat_id": cat_id, "cat_name": cat_name, "cat_description": cat_description} for
                      (cat_id, cat_name, cat_description) in categories]
-    return jsonify(category_list)
+
+    return category_list  # Return as list of dictionaries, not as Response object
+
 
 
 @app.route('/api/categories', methods=['POST'])
@@ -444,7 +340,7 @@ def categories():
     return render_template("admin/product_categories.html", module=module)
 
 
-@app.route('/user')
-def user():
-    module = "User"
-    return render_template("admin/user.html", module=module)
+# @app.route('/user')
+# def user():
+#     module = "User"
+#     return render_template("admin/user.html", module=module)

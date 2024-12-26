@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="static/assets/styles/style.css"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com"/>
+    <link
+            href="https://fonts.googleapis.com/css2?family=Barlow&display=swap"
+            rel="static/assets/stylesheet"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <title>Foody</title>
+
+</head>
+<body>
+<div id="app">
+    <main>
+        <div class="main-section">
+            <header>
+                <div class="main-title">
+                    <div class="main-title-text">
+                        <h1>The Fast Food</h1>
+                    </div>
+                    <div class="main-title-searchbar">
+                        <input type="text" value="Search for food, coffe, etc..."/>
+                        <img src="static/assets/images/search-icon.svg" alt=""/>
+                    </div>
+                </div>
+                <div class="menu-tabs">
+                    <p
+                            :class="{'active-tab': selectedCategory === 'All Category'}"
+                            @click="filterByCategory('All Category')">
+                        All Category
+                    </p>
+                    <p
+                            v-for="(item, index) in category_list"
+                            :key="index"
+                            :class="{'active-tab': selectedCategory === item.cat_name}"
+                            @click="filterByCategory(item.cat_name)">
+                        [[ item.cat_name ]]
+                    </p>
+                </div>
+
+            </header>
+
+            <div class="main-content">
+                <div class="main-content-title">
+                    <h2>Main Menu</h2>
+                    <div class="main-content-dropdown">
+                        <img src="static/assets/images/dropdown-arrow.svg" alt=""/>
+                        <p>Dine In</p>
+                    </div>
+                </div>
+                <div class="main-content-grid">
+                    <div class="grid-item" v-for="(item,index) in product_list" :key="index">
+                        <div class="card">
+                            <div class="card-img-wrapper" @click="addToCart(item)">
+                                <img :src="`static/admin/assets/thumbnails/${item.image}`" alt="" class="card-img"/>
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title">[[item.name]]</h3>
+                                <p class="card-price">$[[item.price]]</p>
+                                <h4 class="card-availability">20 Bowls available</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+        <div class="order">
+            <header>
+                <h2>#Orders 34562</h2>
+                <div class="order-header-selectors">
+                    <p class="active-button">Dine In</p>
+                    <p class="" @click="resetSale">Clear</p>
+                </div>
+                <div class="order-header-info">
+                    <p>Item</p>
+                    <p>Qty</p>
+                    <p>Price</p>
+                </div>
+            </header>
+            <div class="order-content">
+                <div class="order-content-item" v-for="(item,index) in selected_product" :key="index">
+                    <div class="order-item-description">
+                        <img :src="`static/admin/assets/cropped/${item.image}`" alt=""/>
+                        <div>
+                            <h4>[[item.name]]</h4>
+                            <p>$ [[item.price]]</p>
+                        </div>
+                        <input type="number" class="order-item-quantity" v-model="item.qty" value="1" min="1"/>
+                        <h4>$ [[item.price * item.qty]]</h4>
+                    </div>
+                    <div class="order-item-note">
+                        <input type="text" value="Order Note..."/>
+                        <div>
+                            <img src="static/assets/images/Trash.png" @click="removeItem(index)" alt=""/>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="order-total">
+                <div class="order-subtotal">
+                    <p>Total</p>
+                    <p>$ [[subTotal]]</p>
+                </div>
+                <div class="order-subtotal">
+                    <p>Received Amount</p>
+                    <input type="text" class="input-received" v-model="received_amount" placeholder="Enter amount"/>
+                </div>
+                <div class="order-subtotal" style="padding-top: 20px">
+                    <p>Change Amount</p>
+                    <p v-if="received_amount - subTotal > 0">$ [[received_amount - subTotal]]</p>
+                </div>
+                <div class="order-subtotal">
+                    <p>Change Amount in Riel</p>
+                    <p v-if="(received_amount - subTotal)*4000 > 0">[[(received_amount - subTotal) * 4000]] Riel</p>
+                </div>
+            </div>
+
+            <p class="order-payment" @click="payment()">Continue to Payment</p>
+
+
+        </div>
+    </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/gsap.min.js"></script>
+{#<script#}
+{#        src="https://code.jquery.com/jquery-3.6.0.min.js"#}
+{#        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="#}
+{#        crossorigin="anonymous"#}
+{#></script>#}
+<script src="static/assets/scripts/animations.js"></script>
+<script>
+    const {createApp} = Vue;
+    createApp({
+        delimiters: ['[[', ']]'],
+        data() {
+            return {
+                selectedCategory: 'All Category',
+                product_list_old: [],
+                product_list: [],
+                category_list: [],
+                selected_product: [],
+                received_amount: 0,
+                change_amount: 0,
+            }
+        },
+        mounted() {
+            this.fetchCategories(),
+                this.fetchProducts()
+        },
+        methods: {
+            sound(type) {
+                let click = new Audio('static/admin/assets/sounds/click.mp3')
+                let success = new Audio('static/admin/assets/sounds/success.mp3')
+                let warning = new Audio('static/admin/assets/sounds/warning.mp3')
+                if (type == 'click') {
+                    click.volume = 0.1;
+                    click.play()
+                }
+                if (type == 'success') {
+                    success.volume = 0.1;
+                    success.play()
+                }
+                if (type == 'warning') {
+                    warning.volume = 0.1;
+                    warning.play()
+                }
+            },
+            async fetchCategories() {
+                try {
+                    const response = await axios.get('http://127.0.0.1:5000/pos/get-categories');
+                    this.category_list = response.data.category_list;
+                    console.log(this.category_list)
+                } catch (error) {
+                    console.error('Error fetching categories:', error);
+                }
+            },
+            async fetchProducts() {
+                try {
+                    const response = await axios.get('http://127.0.0.1:5000/pos/get-products');
+                    this.product_list = response.data.product_list;
+                    this.product_list_old = this.product_list
+                    console.log(this.product_list)
+                } catch (error) {
+                    console.error('Error fetching categories:', error);
+                }
+            },
+            addToCart(item) {
+                let current_product = {
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    sub_total: parseFloat(item.price),
+                    qty: 1,
+                    image: item.image,
+                }
+                let found = this.selected_product.find(obj => {
+                    return obj.id == item.id
+                })
+                if (!found) {
+                    this.selected_product.push(current_product)
+                } else {
+                    found.qty++
+                }
+                this.sound('click')
+            },
+            filterByCategory(cat_name) {
+                this.selectedCategory = cat_name;
+                if (cat_name === 'All Category') {
+                    this.product_list = this.product_list_old
+                } else {
+                    this.product_list = this.product_list_old.filter(obj => {
+                        return obj.cat_name == cat_name
+                    })
+                }
+                this.sound('click')
+
+            },
+            removeItem(index) {
+                this.sound('warning')
+                Swal.fire({
+                    title: "Are you sure you want to remove this item?",
+                    text: "Do you really want to delete this item? This action cannot be undone.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#3085d6",
+                    confirmButtonText: "Yes, remove it!",
+                    cancelButtonText: "No, keep it",
+                    background: "#1e1e2f",
+                    color: "#fff",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.selected_product.splice(index, 1);
+                        console.log("Item removed:", this.selected_product);
+                        this.sound('success')
+                    } else {
+                        console.log("Remove canceled");
+                    }
+                });
+
+
+            },
+            payment() {
+                if (this.selected_product.length <= 0) {
+                    this.sound('warning')
+                    Swal.fire({
+                        title: "Oops",
+                        icon: "warning",
+                        text: "Please select at least one product.",
+                        background: "#1e1e2f",
+                        color: "#fff",
+                    })
+                    return
+                }
+                if (this.subTotal > this.received_amount) {
+                    this.sound('warning')
+                    Swal.fire({
+                        title: "Oops",
+                        icon: "warning",
+                        text: "Received amount cannot be smaller than grand total.",
+                        background: "#1e1e2f",
+                        color: "#fff",
+                    })
+                    return
+                }
+                let vm = this
+                let api_url = "http://127.0.0.1:5000/pos/payment"
+                let input = {
+                    selected_product: vm.selected_product,
+                    received_amount: parseFloat(vm.received_amount),
+                    total_amount: parseFloat(vm.subTotal),
+                    change_amount: parseFloat(vm.change_amount) - parseFloat(vm.subTotal)
+                }
+                axios.post(api_url, input)
+                    .then(function (response) {
+                        Swal.fire({
+                            title: "Completed",
+                            icon: "success",
+                            text: "Payment is successful.",
+                            background: "#1e1e2f",
+                            color: "#fff",
+                        })
+                    })
+                    .catch(function (error) {
+                        Swal.fire({
+                            title: "Error",
+                            icon: "error",
+                            text: "Error While Processing.",
+                            background: "#1e1e2f",
+                            color: "#fff",
+                        })
+                    })
+                this.selected_product = []
+                this.received_amount = 0
+                this.sound('success');
+
+
+            },
+            resetSale() {
+                if (this.selected_product.length === 0) {
+                    this.sound('warning')
+                    Swal.fire({
+                        title: "Warning",
+                        icon: "info",
+                        text: "No item in the list.",
+                        background: "#1e1e2f",
+                        color: "#fff",
+                    })
+                    return
+                }
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "Do you really want to delete this item?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#d33",
+                    cancelButtonColor: "#3085d6",
+                    confirmButtonText: "Yes, delete it!",
+                    cancelButtonText: "No, keep it",
+                    background: "#1e1e2f",
+                    color: "#fff",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Logic for deleting the item
+                        this.selected_product = []
+                        this.received_amount = 0
+                    } else {
+                        console.log("Deletion canceled");
+                    }
+                });
+
+
+            }
+        },
+        computed: {
+            subTotal() {
+                let total = 0
+                this.selected_product.forEach(item => {
+                    let sub_total = parseFloat(item.qty) * parseFloat(item.price)
+                    total += sub_total
+                })
+                return total
+            }
+        }
+    }).mount('#app')
+</script>
+</body>
+
+</html>
