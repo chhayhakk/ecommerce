@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="flask_ecommerce@localhost" uuid="914a5e88-15a8-4783-b374-e06ca635c57c">
+    <data-source source="LOCAL" name="flask_ecommerce@localhost" uuid="4bf01e47-d29c-4c58-8655-3f69dcc75a46">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>

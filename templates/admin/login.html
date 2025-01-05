@@ -1,0 +1,64 @@
+{% include "admin/includes/head.html" %}
+{% block content %}
+   <div id="app">
+     <main>
+        <section class="content-main mt-80 mb-80">
+            <div class="card mx-auto card-login">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Sign in</h4>
+                    <form method="POST" action="/login">
+                        <div class="mb-3">
+                            <input class="form-control" placeholder="Username or email" type="text" name="email" type="email">
+                        </div>
+                        <div class="mb-3">
+                            <input class="form-control" placeholder="Password" type="password" name="password">
+                        </div>
+                        <div class="mb-3">
+                            <a href="#" class="float-end font-sm text-muted">Forgot password?</a>
+                            <label class="form-check">
+                                <input type="checkbox" class="form-check-input" checked="">
+                                <span class="form-check-label">Remember Me</span>
+                            </label>
+                        </div>
+                        <div class="mb-4">
+                            <button type="submit" class="btn btn-primary w-100"> Login </button>
+                        </div>
+                    </form>
+                    <p class="text-center mb-4">Don't have account? <a href="#">Sign up</a></p>
+                </div>
+            </div>
+        </section>
+        <footer class="main-footer text-center">
+            <p class="font-xs">
+                <script>
+                document.write(new Date().getFullYear())
+                </script> ©, Evara - HTML Ecommerce Template .
+            </p>
+            <p class="font-xs mb-30">All rights reserved</p>
+        </footer>
+    </main>
+   </div>
+
+{% endblock %}
+   {% block script %}
+       <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+              <script type="module">
+    const {createApp} = Vue;
+    createApp({
+        delimiters: ['[[', ']]'],
+        data() {
+            return {
+                message: 'Hello',
+            }
+        },
+        mounted() {
+
+        },
+        methods: {
+
+        },
+        computed: {
+        }
+    }).mount('#app')
+</script>
+    {% endblock %}

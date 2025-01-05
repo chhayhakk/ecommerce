@@ -8,7 +8,6 @@ from werkzeug.utils import secure_filename
 from io import BytesIO
 from PIL import Image
 
-
 UPLOAD_FOLDER = 'static/admin/assets/images/'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['CROPPED_FOLDER'] = 'static/admin/assets/cropped'
@@ -23,21 +22,56 @@ app.config['MYSQL_DB'] = 'flask_ecommerce'
 
 mysql = MySQL(app)
 
+from functools import wraps
+from flask import session, redirect, url_for, flash
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user = session.get('user')  # Get user data from session
+        print(f"User session: {user}")  # Print session for debugging
+
+        if not user:
+            flash('You must be logged in to access this page.', 'warning')
+            return redirect(url_for('login'))  # Redirect to the login page if not logged in
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
 
 @app.route('/')
 @app.route('/admin')
+@login_required
 def home():
+    user = session.get('user')
+    print(f"Home page user session: {user}")
     module = 'Dashboard'
     return render_template("admin/dashboard.html", module=module)
 
 @app.route('/api/products', methods=['GET'])
 def get_data():
+    user_id = request.args.get('user_id')
+
     cur = mysql.connection.cursor()
+
     cur.execute("""
-        SELECT p.*, c.cat_name 
-        FROM tbl_products p
-        LEFT JOIN tbl_categories c ON p.cat_id = c.cat_id;
-    """)
+        SELECT 
+            p.*, 
+            c.cat_name,
+            CASE 
+                WHEN f.id IS NOT NULL THEN TRUE 
+                ELSE FALSE 
+            END AS is_favorite
+        FROM 
+            tbl_products p
+        LEFT JOIN 
+            tbl_categories c ON p.cat_id = c.cat_id
+        LEFT JOIN 
+            tbl_favorites f ON p.id = f.product_id AND f.user_id = %s
+    """, (user_id,))
+
     results = cur.fetchall()
     columns = [column[0] for column in cur.description]
 
@@ -50,15 +84,28 @@ def get_data():
 
     return products
 
+
 @app.route('/api/products-data/<int:id>', methods=['GET'])
 def get_data_byID(id):
+    # Retrieve the user_id from the query parameters
+    user_id = request.args.get('user_id')  # Example: /api/products-data/<id>?user_id=<user_id>
+
+    if not user_id:
+        return jsonify({'error': 'User ID is required'}), 400
+
     cur = mysql.connection.cursor()
+
+    # Modify the SQL query to include is_favorite, which checks if the product is in the user's favorites list
     cur.execute("""
-        SELECT p.*, c.cat_name 
+        SELECT p.*, 
+               c.cat_name, 
+               IF(f.product_id IS NOT NULL, TRUE, FALSE) AS is_favorite
         FROM tbl_products p
         LEFT JOIN tbl_categories c ON p.cat_id = c.cat_id
+        LEFT JOIN tbl_favorites f ON p.id = f.product_id AND f.user_id = %s
         WHERE p.id = %s;
-    """, (id,))
+    """, (user_id, id))
+
     row = cur.fetchone()
     columns = [column[0] for column in cur.description]
 
@@ -70,6 +117,7 @@ def get_data_byID(id):
         return jsonify({'error': 'Product not found'}), 404
 
     return product
+
 
 @app.route('/api/products', methods=['POST'])
 def add_product_api():
@@ -249,6 +297,7 @@ def add_product():
 
 
 @app.route('/product_list', methods=['GET'])
+@login_required
 def product_list():
     module = "Product List"
     return render_template("admin/product_list.html", module=module)
@@ -335,6 +384,7 @@ def delete_category(cat_id):
 
 
 @app.route('/categories')
+@login_required
 def categories():
     module = "Categories"
     return render_template("admin/product_categories.html", module=module)
