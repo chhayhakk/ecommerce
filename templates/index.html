@@ -79,9 +79,9 @@
         </div>
         <div class="order">
             <header>
-                <h2>#Orders 34562</h2>
+                <h2>#Order</h2>
                 <div class="order-header-selectors">
-                    <p class="active-button">Dine In</p>
+                    <p class="active-button" @click="logout">Log out</p>
                     <p class="" @click="resetSale">Clear</p>
                 </div>
                 <div class="order-header-info">
@@ -113,7 +113,7 @@
             <div class="order-total">
                 <div class="order-subtotal">
                     <p>Total</p>
-                    <p>$ [[subTotal]]</p>
+                    <p>$ [[subTotal.toFixed(2)]]</p> <!-- Format Total to 2 decimal places -->
                 </div>
                 <div class="order-subtotal">
                     <p>Received Amount</p>
@@ -121,13 +121,18 @@
                 </div>
                 <div class="order-subtotal" style="padding-top: 20px">
                     <p>Change Amount</p>
-                    <p v-if="received_amount - subTotal > 0">$ [[received_amount - subTotal]]</p>
+                    <p v-if="received_amount - subTotal > 0">
+                        $ [[(received_amount - subTotal).toFixed(2)]]
+                    </p>
                 </div>
                 <div class="order-subtotal">
                     <p>Change Amount in Riel</p>
-                    <p v-if="(received_amount - subTotal)*4000 > 0">[[(received_amount - subTotal) * 4000]] Riel</p>
+                    <p v-if="(received_amount - subTotal) * 4000 > 0">
+                        [[((received_amount - subTotal) * 4000).toFixed(2)]] Riel
+                    </p>
                 </div>
             </div>
+
 
             <p class="order-payment" @click="payment()">Continue to Payment</p>
 
@@ -155,6 +160,7 @@
                 selected_product: [],
                 received_amount: 0,
                 change_amount: 0,
+                current_user: ''
             }
         },
         mounted() {
@@ -162,6 +168,10 @@
                 this.fetchProducts()
         },
         methods: {
+            logout(){
+                  window.location.href = "/logout";
+            },
+
             sound(type) {
                 let click = new Audio('static/admin/assets/sounds/click.mp3')
                 let success = new Audio('static/admin/assets/sounds/success.mp3')
@@ -322,6 +332,7 @@
                     })
                     return
                 }
+                this.sound('warning')
                 Swal.fire({
                     title: "Are you sure?",
                     text: "Do you really want to delete this item?",

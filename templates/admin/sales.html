@@ -1,0 +1,124 @@
+{% extends "admin/index.html" %}
+{% block content %}
+    <div id="app">
+        <section class="content-main">
+            <div class="content-header">
+                <div>
+                    <h2 class="content-title card-title">Order List </h2>
+                </div>
+                <a href="#" class="btn btn-md rounded font-sm" @click="refreshSale">Refresh</a>
+
+            </div>
+            <div class="card mb-4">
+                <header class="card-header">
+                    <div class="row gx-3">
+                        <div class="col-lg-4 col-md-6 me-auto">
+                            <input type="text" placeholder="Search..." class="form-control">
+                        </div>
+                        <div class="col-lg-2 col-6 col-md-3">
+                            <select class="form-select">
+                                <option>Status</option>
+                                <option>Active</option>
+                                <option>Disabled</option>
+                                <option>Show all</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-6 col-md-3">
+                            <select class="form-select">
+                                <option>Show 20</option>
+                                <option>Show 30</option>
+                                <option>Show 40</option>
+                            </select>
+                        </div>
+                    </div>
+                </header> <!-- card-header end// -->
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>#Sale ID</th>
+                                <th scope="col">Reference</th>
+                                <th scope="col">Total Amount</th>
+                                <th scope="col">Received Amount</th>
+                                <th scope="col">User</th>
+                                <th scope="col">Date</th>
+                                <th scope="col" class="text-end"> Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr v-for="(item, index ) in sale_list" :key="index">
+                                <td>[[index]]</td>
+                                <td><b>[[item.ref_code]]</b></td>
+                                <td>$ [[parseFloat(item.total_amount).toFixed(2)]]</td>
+                                <td><span class="badge rounded-pill alert-warning">$ [[item.received_amount]]</span>
+                                </td>
+                                <td>[[item.user_name]]</td>
+                                <td>[[item.transaction_code]]</td>
+                                <td class="text-end">
+                                   <a :href="'/sale_detail?sale_id=' + item.id" class="btn btn-md rounded font-sm">Detail</a>
+                                    <div class="dropdown">
+                                        <a href="#" data-bs-toggle="dropdown"
+                                           class="btn btn-light rounded btn-sm font-sm"> <i
+                                                class="material-icons md-more_horiz"></i> </a>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item" href="#">View detail</a>
+                                            <a class="dropdown-item" href="#">Edit info</a>
+                                            <a class="dropdown-item text-danger" href="#">Delete</a>
+                                        </div>
+                                    </div> <!-- dropdown //end -->
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div> <!-- table-responsive //end -->
+                </div> <!-- card-body end// -->
+            </div> <!-- card end// -->
+            <div class="pagination-area mt-15 mb-50">
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination justify-content-start">
+                        <li class="page-item active"><a class="page-link" href="#">01</a></li>
+                        <li class="page-item"><a class="page-link" href="#">02</a></li>
+                        <li class="page-item"><a class="page-link" href="#">03</a></li>
+                        <li class="page-item"><a class="page-link dot" href="#">...</a></li>
+                        <li class="page-item"><a class="page-link" href="#">16</a></li>
+                        <li class="page-item"><a class="page-link" href="#"><i
+                                class="material-icons md-chevron_right"></i></a></li>
+                    </ul>
+                </nav>
+            </div>
+        </section> <!-- content-main end// -->
+    </div>
+{% endblock %}
+{% block script %}
+    <script src="static/assets/scripts/animations.js"></script>
+    <script>
+        const {createApp} = Vue;
+        createApp({
+            delimiters: ['[[', ']]'],
+            data() {
+                return {
+                    sale_list: [],
+                }
+            },
+            mounted() {
+                this.fetchSales()
+            },
+            methods: {
+                async fetchSales() {
+                    try {
+                        const response = await axios.get('http://127.0.0.1:5000/api/sales');
+                        this.sale_list = response.data;
+                        console.log(this.sale_list)
+                    } catch (error) {
+                        console.error('Error fetching categories:', error);
+                    }
+                },
+                refreshSale() {
+                    this.fetchSales()
+                }
+            },
+            computed: {}
+        }).mount('#app')
+    </script>
+{% endblock %}

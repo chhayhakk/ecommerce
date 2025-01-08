@@ -1,7 +1,7 @@
 from datetime import datetime, date
-
+import uuid
 import requests
-from flask import jsonify, request
+from flask import jsonify, request, session
 from app import app, render_template
 from routes.dashboard import get_data
 from routes.dashboard import get_categories, mysql
@@ -32,13 +32,14 @@ def fetchProducts():
 
 @app.post('/pos/payment')
 def payment():
+    current_user = session.get('user')
     form = request.get_json()
     selected_product = form['selected_product']
     total_amount = form['total_amount']
     received_amount = form['received_amount']
     transaction_date = datetime.now()
-    ref_code = 'ref_code_001'
-    user_id = 1
+    ref_code = f"ref_code_{int(uuid.uuid4().int % 1e8)}"
+    user_id = current_user['id']
     cur = mysql.connection.cursor()
     try:
         # Insert the sale record
@@ -95,7 +96,6 @@ def payment():
     finally:
         cur.close()
 
-    # (This line is unreachable and should be removed)
     return selected_product, total_amount, received_amount, transaction_date
 
 

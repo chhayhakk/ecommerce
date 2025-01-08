@@ -31,10 +31,12 @@
                         {% endif %}">Categories</a>
                     </div>
                 </li>
-{#                <li class="menu-item">#}
-{#                    <a class="menu-link" href="page-orders-1.html"> <i class="icon material-icons md-shopping_cart"></i>#}
-{#                        <span class="text">Orders</span>#}
-{#                    </a>#}
+                <li class="menu-item {% if module == 'Sale' %}
+                	active
+                {% endif %} ">
+                    <a class="menu-link" href="/sale"> <i class="icon material-icons md-shopping_cart"></i>
+                        <span class="text">Orders</span>
+                    </a>
 {#                    <div class="submenu">#}
 {#                        <a href="page-orders-1.html">Order list 1</a>#}
 {#                        <a href="page-orders-2.html">Order list 2</a>#}
@@ -42,7 +44,7 @@
 {#                        <a href="page-orders-tracking.html">Order tracking</a>#}
 {#<a href="page-invoice.html">Invoice</a>#}
 {#                    </div>#}
-{#                </li>#}
+                </li>
                 <li class="menu-item {% if module == "User" %}
                 	active
                 {% endif %} ">

@@ -2,7 +2,7 @@
 {% block content %}
     <div id="app">
         <div id="crud-modal" tabindex="-1" aria-hidden="true"
-             class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+             class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full" >
             <div class="relative p-4 w-full max-w-md max-h-full">
                 <!-- Modal content -->
                 <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
@@ -109,7 +109,7 @@
                                 <textarea id="description" rows="4" v-model="newUser.address" id="address"
                                           name="address"
                                           class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                          placeholder="Write product description here"></textarea>
+                                          placeholder="Write user address"></textarea>
                             </div>
                         </div>
                         <div class="col-span-2 mb-4">
@@ -198,7 +198,7 @@
                                        class="btn btn-sm font-sm rounded btn-brand mr-2">
                                         <i class="material-icons md-edit"></i> Edit
                                     </a>
-                                    <a href="#" @click="deleteUser(user.user_id)"
+                                    <a href="#" @click="deleteUser(user.id)"
                                        class="btn btn-sm font-sm btn-light rounded">
                                         <i class="material-icons md-delete_forever"></i> Delete
                                     </a>
@@ -250,7 +250,7 @@
                     },
                     image: null,
                     errors: {},
-                    isEditing: false,  // To track if the form is in edit mode
+                    isEditing: false,
                     userId: null
 
                 }
@@ -262,7 +262,6 @@
             },
             methods: {
                 async deleteUser(userId) {
-                    // Show confirmation modal
                     swal({
                             title: "Are you sure?",
                             text: "You won't be able to revert this!",
@@ -272,15 +271,15 @@
                             confirmButtonText: "Yes, delete it!",
                             cancelButtonText: "No, cancel!",
                             closeOnConfirm: false,
-                            closeOnCancel: false
+                            closeOnCancel: true
                         },
                         async (isConfirm) => {
                             if (isConfirm) {
                                 try {
                                     const response = await axios.delete(`http://127.0.0.1:5000/api/users/${userId}`);
                                     if (response.status === 204) {
-                                        this.fetchUsers(); // Refresh the user list
-                                        swal("Deleted!", "User has been deleted.", "success"); // Show success message
+                                        this.fetchUsers();
+                                        swal("Deleted!", "User has been deleted.", "success");
                                     }
                                 } catch (error) {
                                     console.error('Error deleting user:', error.response ? error.response.data : error.message);
@@ -295,7 +294,8 @@
 
                 editUser(user) {
                     this.isEditing = true;  // Set editing mode
-                    this.userId = user.user_id;  // Store user ID
+                    this.userId = user.id;
+                    console.log(this.userId)// Store user ID
                     this.newUser = {
                         code: user.code,
                         name: user.name,
@@ -362,6 +362,7 @@
 
                         // Handle success and reset form fields
                         if (response.status === 201) {
+                             swal("Success!", "User added successfully!", "success");
                             this.fetchUsers();
                             this.newUser = {
                                 name: '',
@@ -414,11 +415,12 @@
                             }
                         });
 
-                        // Handle success and reset form fields
                         if (response.status === 200) {
+                            swal("Success!", "User updated successfully!", "success");
                             this.fetchUsers();
                             this.resetForm();
                             this.closeModal();
+
                         }
                     } catch (error) {
                         if (error.response && error.response.data.error === 'email_exists') {

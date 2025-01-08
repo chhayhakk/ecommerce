@@ -1,5 +1,7 @@
 from app import app, render_template
 from flask import jsonify, request, session, flash, url_for, redirect
+
+from routes import admin_required
 from routes.dashboard import mysql
 from werkzeug.utils import secure_filename
 import os
@@ -10,38 +12,40 @@ app.secret_key = secret_key
 print(secret_key)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    error_message = None  # Initialize the error message
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
         try:
             # Query the database to find the user by email
             cur = mysql.connection.cursor()
-            cur.execute('SELECT id, name, email, password FROM tbl_users WHERE email=%s', (email,))
+            cur.execute('SELECT id, name, email, password, role FROM tbl_users WHERE email=%s', (email,))
             user = cur.fetchone()
 
             if user:
-                id, name, email, stored_password = user
+                id, name, email ,stored_password, role = user
                 if stored_password == password:  # Compare plain text passwords (in production, hash passwords!)
                     # Set session data
                     session['user'] = {
                         'id': id,
                         'name': name,
                         'email': email,
+                        'role': role
                     }
                     print(f"Session data after login: {session['user']}")  # Debugging line to check session content
-
                     flash('You are now logged in!', 'success')
                     return redirect(url_for('home'))  # Redirect to the home page or dashboard
                 else:
-                    flash('Passwords do not match', 'danger')
+                    error_message = 'Invalid credentials'  # Error message for incorrect password
             else:
-                flash('User not found', 'danger')
+                error_message = 'Invalid credentials'  # Error message for user not found
 
         except Exception as e:
             print(f"Error: {e}")
-            flash('An error occurred. Please try again.', 'danger')
+            error_message = 'An error occurred. Please try again.'
 
-    return render_template("admin/login.html")
+    return render_template("admin/login.html", error_message=error_message)
+
 
 @app.route('/logout')
 def logout():
@@ -54,7 +58,6 @@ def signup():
 @app.route('/api/users', methods=['POST'])
 def add_user():
     try:
-        # Collect data
         code = request.form['code']
         name = request.form['name']
         address = request.form['address']
@@ -91,25 +94,53 @@ def add_user():
         return jsonify({'message': 'User added successfully!', 'id':new_id}), 201
 
     except Exception as e:
-            print(f"Error: {e}")  # Print error for debugging
+            print(f"Error: {e}")
             return jsonify({'error': 'user to add product', 'details': str(e)}), 400
 
+@app.get('/api/users')
+def get_user_pos():
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT * FROM tbl_users")
+        users = cur.fetchall()
 
+        if users:
+            # Map each user to a dictionary
+            user_list = [
+                {
+                    'id': user[0],
+                    'name': user[3],
+                    'code': user[1],
+                    'email': user[6],
+                    'gender': user[4],
+                    'role': user[5],
+                    'phone': user[7],
+                    'address': user[8],
+                    'profile': user[2],
+                    'status': user[10],
+                }
+                for user in users
+            ]
+
+            return jsonify(user_list)  # Return all users as JSON
+        else:
+            return jsonify({'message': 'No users found'}), 404
+    except Exception as e:
+        print(f"Error: {e}")  # Print error for debugging
+        return jsonify({'error': 'Failed to fetch users', 'details': str(e)}), 400
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     try:
-        # Collect JSON data from the request body
-        data = request.get_json()
-        print("Received data:", data)
-        code = data['code']
-        name = data['name']
-        address = data['address']
-        role = data['role']
-        gender = data['gender']
-        password = data['password']
-        phone = data['phone']
-        email = data['email']
-        status = data['status']
+        # Collect form data from the request body
+        code = request.form['code']
+        name = request.form['name']
+        address = request.form['address']
+        role = request.form['role']
+        gender = request.form['gender']
+        password = request.form['password']
+        phone = request.form['phone']
+        email = request.form['email']
+        status = request.form['status']
 
         cur = mysql.connection.cursor()
 
@@ -153,14 +184,69 @@ def update_user(user_id):
         print(f"Error: {e}")  # Print error for debugging
         return jsonify({'error': 'user_update_failed', 'details': str(e)}), 400
 
-
-
+# @app.route('/api/users/<int:user_id>', methods=['PUT'])
+# def update_user(user_id):
+#     try:
+#         # Collect JSON data from the request body
+#         data = request.get_json()
+#         print("Received data:", data)
+#         code = data['code']
+#         name = data['name']
+#         address = data['address']
+#         role = data['role']
+#         gender = data['gender']
+#         password = data['password']
+#         phone = data['phone']
+#         email = data['email']
+#         status = data['status']
+#
+#         cur = mysql.connection.cursor()
+#
+#         # Check if the email exists and belongs to another user
+#         cur.execute("SELECT * FROM tbl_users WHERE email = %s AND id != %s", (email, user_id))
+#         existing_user = cur.fetchone()
+#         if existing_user:
+#             return jsonify({'error': 'email_exists', 'message': 'Email already exists!'}), 400
+#
+#         # Handle image upload - make sure the image is sent as part of multipart form data
+#         image_name = None
+#         if 'image' in request.files:
+#             image = request.files['image']
+#             filename = secure_filename(image.filename)
+#             image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+#             image.save(image_path)
+#             image_name = filename
+#
+#             # Update the user information, including the new image if uploaded
+#             cur.execute("""
+#                 UPDATE tbl_users
+#                 SET code = %s, name = %s, profile = %s, address = %s, role = %s,
+#                     gender = %s, email = %s, phone = %s, password = %s, status = %s
+#                 WHERE id = %s
+#             """, (code, name, image_name, address, role, gender, email, phone, password, status, user_id))
+#         else:
+#             # Update user info without changing the image
+#             cur.execute("""
+#                 UPDATE tbl_users
+#                 SET code = %s, name = %s, address = %s, role = %s,
+#                     gender = %s, email = %s, phone = %s, password = %s, status = %s
+#                 WHERE id = %s
+#             """, (code, name, address, role, gender, email, phone, password, status, user_id))
+#
+#         mysql.connection.commit()  # Commit the changes
+#         cur.close()
+#
+#         return jsonify({'message': 'User updated successfully!'}), 200
+#
+#     except Exception as e:
+#         print(f"Error: {e}")  # Print error for debugging
+#         return jsonify({'error': 'user_update_failed', 'details': str(e)}), 400
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     try:
         cur = mysql.connection.cursor()
         cur.execute("DELETE FROM tbl_users WHERE id = %s", (user_id,))
-        mysql.connection.commit()  # Commit the changes
+        mysql.connection.commit()
         cur.close()
 
         return jsonify({'message': 'User deleted successfully!'}), 204
@@ -170,8 +256,10 @@ def delete_user(user_id):
 
 @app.route('/user')
 @login_required
+@admin_required
 def user():
-    return render_template("admin/user.html")
+    module = 'User'
+    return render_template("admin/user.html", module=module)
 
 # @app.route('/api/users', methods=['POST'])
 # def add_user():

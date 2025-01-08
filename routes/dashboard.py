@@ -40,16 +40,167 @@ def login_required(f):
 
     return decorated_function
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user = session.get('user')  # Get user data from session
+        print(f"User session: {user}")  # Print session for debugging
 
+        if not user:
+            flash('You must be logged in to access this page.', 'warning')
+            return redirect(url_for('login'))  # Redirect to the login page if not logged in
+
+        if user.get('role') != 'admin':  # Check if the user is an admin
+            flash('You do not have permission to access this page.', 'danger')
+            return redirect(url_for('pos'))  # Redirect to home page if not an admin
+
+        return f(*args, **kwargs)
+
+    return decorated_function
 @app.route('/')
 @app.route('/admin')
 @login_required
+@admin_required
 def home():
     user = session.get('user')
     print(f"Home page user session: {user}")
     module = 'Dashboard'
     return render_template("admin/dashboard.html", module=module)
 
+@app.route('/sale')
+@login_required
+@admin_required
+def sale():
+    module = 'Sale'
+    return render_template("admin/sales.html", module=module)
+
+@app.route('/sale_detail')
+@login_required
+@admin_required
+def sale_detail():
+    return render_template("admin/sale_detail.html")
+
+
+@app.get('/pos/sale/<int:sale_id>')
+def get_sale_details(sale_id):
+    try:
+        # Initialize cursor
+        cur = mysql.connection.cursor()
+
+        # Query to get the sale summary
+        cur.execute("""
+            SELECT
+                s.id,
+                s.ref_code,
+                s.total_amount,
+                s.received_amount,
+                s.received_amount - s.total_amount AS change_amount,
+                (s.received_amount - s.total_amount) * 4000 AS change_in_riel,
+                u.name AS user_name,
+                s.transaction_date
+            FROM
+                tbl_sales s
+            INNER JOIN
+                tbl_users u ON s.user_id = u.id
+            WHERE
+                s.id = %s
+        """, (sale_id,))
+
+        sale_summary = cur.fetchone()
+
+        # Query to get the sale details
+        cur.execute("""
+            SELECT
+                sd.sale_id,
+                sd.product_id,
+                p.name AS product_name,
+                sd.qty,
+                sd.price,
+                sd.total,
+                p.image
+            FROM
+                tbl_sale_detail sd
+            INNER JOIN
+                tbl_products p ON sd.product_id = p.id
+            WHERE
+                sd.sale_id = %s
+        """, (sale_id,))
+
+        sale_details = cur.fetchall()
+
+        if sale_summary and sale_details:
+            # Prepare sale summary
+            sale_summary_dict = {
+                'sale_id': sale_summary[0],
+                'ref_code': sale_summary[1],
+                'total_amount': str(sale_summary[2]),
+                'received_amount': str(sale_summary[3]),
+                'change_amount': str(sale_summary[4]),
+                'change_in_riel': str(sale_summary[5]),
+                'user_name': sale_summary[6],
+                'transaction_date': sale_summary[7]
+            }
+
+            # Prepare sale details
+            sale_detail_list = [
+                {
+                    'price': str(sale[4]),
+                    'product_id': sale[1],
+                    'product_name': sale[2],
+                    'qty': sale[3],
+                    'sale_id': sale[0],
+                    'total': sale[4] * sale[3],
+                    'product_image': sale[6],
+                }
+                for sale in sale_details
+            ]
+
+            # Return the combined response
+            return jsonify({
+                'sale': sale_summary_dict,
+                'details': sale_detail_list
+            }), 200
+        else:
+            return jsonify({'message': 'Sale details not found'}), 404
+
+    except Exception as e:
+        # Handle error
+        return jsonify({'error': str(e)}), 500
+    finally:
+        # Close cursor
+        cur.close()
+
+
+
+@app.get('/api/sales')
+@login_required
+def get_sales():
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT * FROM tbl_sales LEFT JOIN tbl_users on tbl_sales.user_id = tbl_users.id")
+        sales = cur.fetchall()
+
+        if sales:
+            # Map each user to a dictionary
+            sale_list = [
+                {
+                    'id': sale[0],
+                    'ref_code': sale[1],
+                    'transaction_code': sale[2],
+                    'user_id': sale[3],
+                    'total_amount': sale[4],
+                    'received_amount': sale[5],
+                    'user_name': sale[9]
+                }
+                for sale in sales
+            ]
+
+            return jsonify(sale_list)  # Return all users as JSON
+        else:
+            return jsonify({'message': 'No users found'}), 404
+    except Exception as e:
+        print(f"Error: {e}")  # Print error for debugging
+        return jsonify({'error': 'Failed to fetch users', 'details': str(e)}), 400
 @app.route('/api/products', methods=['GET'])
 def get_data():
     user_id = request.args.get('user_id')
@@ -298,6 +449,7 @@ def add_product():
 
 @app.route('/product_list', methods=['GET'])
 @login_required
+@admin_required
 def product_list():
     module = "Product List"
     return render_template("admin/product_list.html", module=module)
@@ -385,6 +537,7 @@ def delete_category(cat_id):
 
 @app.route('/categories')
 @login_required
+@admin_required
 def categories():
     module = "Categories"
     return render_template("admin/product_categories.html", module=module)
